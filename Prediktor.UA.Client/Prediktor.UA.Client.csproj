@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.360.33" />
+	  <PackageReference Include="Prediktor.Log" Version="1.0.7" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="uaconfig_example.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

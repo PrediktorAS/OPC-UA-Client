@@ -5,3 +5,7 @@
 /.vs
 /CertGen/bin
 /CertGen/obj
+/Prediktor.UA.Client/bin
+/Prediktor.UA.Client/obj
+/Prediktor.UA.Console/bin
+/Prediktor.UA.Console/obj
