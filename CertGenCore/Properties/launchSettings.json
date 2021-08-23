@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "CertGenCore": {
+      "commandName": "Project",
+      "commandLineArgs": "convert \"C:\\Temp\\cert\\private\\nofrevm011 [E820B49DD2EC4C9ABB6D93CBF71EDD2652200D2A].pfx\" pw nofrevm011 C:\\Temp\\cert\\certs C:\\Temp\\cert\\private"
+    }
+  }
+}

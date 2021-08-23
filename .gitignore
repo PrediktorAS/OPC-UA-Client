@@ -9,3 +9,5 @@
 /Prediktor.UA.Client/obj
 /Prediktor.UA.Console/bin
 /Prediktor.UA.Console/obj
+/CertGenCore/obj
+/CertGenCore/bin/Debug/net5.0

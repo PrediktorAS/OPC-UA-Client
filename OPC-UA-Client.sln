@@ -9,6 +9,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Prediktor.UA.Client", "Pred
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Prediktor.UA.Console", "Prediktor.UA.Console\Prediktor.UA.Console.csproj", "{0FFD8847-CBE2-4826-925D-8F066637B795}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CertGenCore", "CertGenCore\CertGenCore.csproj", "{5990E6FE-2692-42B5-A28A-244F64064F80}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{0FFD8847-CBE2-4826-925D-8F066637B795}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0FFD8847-CBE2-4826-925D-8F066637B795}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0FFD8847-CBE2-4826-925D-8F066637B795}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5990E6FE-2692-42B5-A28A-244F64064F80}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5990E6FE-2692-42B5-A28A-244F64064F80}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5990E6FE-2692-42B5-A28A-244F64064F80}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5990E6FE-2692-42B5-A28A-244F64064F80}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
