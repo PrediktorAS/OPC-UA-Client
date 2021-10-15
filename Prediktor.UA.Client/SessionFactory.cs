@@ -183,6 +183,39 @@ namespace Prediktor.UA.Client
             }
         }
 
+        public Session CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig)
+        {
+            bool haveAppCertificate = false;
+            if (useSecurity)
+            {
+                var appInstance = new ApplicationInstance(applicationConfig);
+                var checkCertificate = true;
+                if (checkCertificate)
+                {
+                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificate(true, 0).Result;
+                    if (!haveAppCertificate)
+                    {
+                        throw new Exception("Application instance certificate invalid!");
+                    }
+                }
+                applicationConfig.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate);
+            }
+            var autoAccept = false;
+            if (applicationConfig.SecurityConfiguration.AutoAcceptUntrustedCertificates)
+            {
+                autoAccept = true;
+            }
+
+            applicationConfig.CertificateValidator.CertificateValidation += new CertificateValidationEventHandler((validator, e) => CertificateValidator_CertificateValidation(autoAccept, validator, e));
+
+            var endpointConfiguration = EndpointConfiguration.Create(applicationConfig);
+            var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
+
+            return Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout,
+                user, null).Result;
+        }
+
+
         public async Task<Session> CreateAnonymouslyAsync(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
         {
             return await CreateSessionAsync(endpointURL, sessionName, new UserIdentity(new AnonymousIdentityToken()), useSecurity,reverseConnect, applicationConfig);

@@ -145,5 +145,25 @@ namespace Prediktor.UA.Client
         /// <returns>A session object if successful, or null if the method fails</returns>
 
         Task<Session> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig);
+
+        /// <summary>
+        /// Connects to endpointDescription.
+        /// 
+        /// If user is not anonymous, useSecurity must be true.
+        /// 
+        /// If security is used, a certificate must be present. Where the certificate is stored, is defined in the ApplicationConfiguration. 
+        /// The ApplicationConfiguration is usually loaded from a config file.
+        /// 
+        /// The certificate is found by comparing subject names of the certificates in the certificate store (e.g. a directory) 
+        /// to the subject name defined in the ApplicationConfiguration.
+        /// </summary>
+        /// <param name="endpointDescription"></param>
+        /// <param name="sessionName"></param>
+        /// <param name="user"></param>
+        /// <param name="useSecurity"></param>
+        /// <param name="sessionTimeout"></param>
+        /// <param name="applicationConfig"></param>
+        /// <returns></returns>
+        Session CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig);
     }
 }
