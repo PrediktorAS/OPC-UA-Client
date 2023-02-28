@@ -227,7 +227,7 @@ namespace Prediktor.UA.Client
 						results[i] = new Result<HistoryEvent>(data);
 						if (res[i].ContinuationPoint != null)
 						{
-							continuationPoints.Add(new ContPoint<HistoryEvent>(nodeIds[i], data, res[i].ContinuationPoint));
+							continuationPoints.Add(new ContPoint<HistoryEvent>(i, nodeIds[i], data, res[i].ContinuationPoint));
 						}
 					}
 					else
@@ -276,12 +276,14 @@ namespace Prediktor.UA.Client
 
 		private class ContPoint<T>
 		{
-			public ContPoint(NodeId nodeId, T data, byte[] continuationPoint)
+			public ContPoint(int index, NodeId nodeId, T data, byte[] continuationPoint)
 			{
+				Index = index;
 				Data = data;
 				NodeId = nodeId;
 				ContinuationPoint = continuationPoint?.ToArray();
 			}
+			public int Index { get; }
 			public T Data { get; }
 			public byte[] ContinuationPoint { get; }
 
@@ -305,10 +307,10 @@ namespace Prediktor.UA.Client
 					if (values != null)
 					{
 						merge(cps[i].Data, values);
-						//cps[i].Data.DataValues.AddRange(values.DataValues);
+
 						if (res[i].ContinuationPoint != null)
 						{
-							contPoints.Add(new ContPoint<T>(cps[i].NodeId, cps[i].Data, res[i].ContinuationPoint));
+							contPoints.Add(new ContPoint<T>(i, cps[i].NodeId, cps[i].Data, res[i].ContinuationPoint));
 						}
 					}
 				}
@@ -318,13 +320,12 @@ namespace Prediktor.UA.Client
 				}
 			}
 			if (contPoints.Count > 0)
-				ReadContinuationPoints<T>(session, readDetails, contpoints, merge);
+				ReadContinuationPoints<T>(session, readDetails, contPoints, merge);
 		}
 
 
 		public static Result<HistoryData>[] ReadHistoryRaw(this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, bool returnBounds = false)
 		{
-
 			RequestHeader requestHeader = new RequestHeader();
 
 			HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
@@ -333,7 +334,7 @@ namespace Prediktor.UA.Client
 				NodeId = n,
 			}));
 
-			HistoryReadDetails read = new ReadRawModifiedDetails()
+			HistoryReadDetails readDetails = new ReadRawModifiedDetails()
 			{
 				StartTime = startTime,
 				EndTime = endTime,
@@ -342,10 +343,10 @@ namespace Prediktor.UA.Client
 				IsReadModified = false
 			};
 
-			session.HistoryRead(requestHeader, new ExtensionObject(read), TimestampsToReturn.Both, false, nodesToRead,
+			var readDetailsEx = new ExtensionObject(readDetails);
+
+            session.HistoryRead(requestHeader, readDetailsEx, TimestampsToReturn.Both, false, nodesToRead,
 				out HistoryReadResultCollection result, out DiagnosticInfoCollection diagnosticInfos);
-
-
 
 			var historyData = new Result<HistoryData>[result.Count];
 			var continuationPoints = new List<ContPoint<HistoryData>>();
@@ -361,7 +362,7 @@ namespace Prediktor.UA.Client
 					historyData[i] = new Result<HistoryData>(values);
 					if (result[i].ContinuationPoint != null)
 					{
-						continuationPoints.Add(new ContPoint<HistoryData>(nodeIds[i], values, result[i].ContinuationPoint));
+						continuationPoints.Add(new ContPoint<HistoryData>(i, nodeIds[i], values, result[i].ContinuationPoint));
 					}
 				}
 				else
@@ -369,11 +370,42 @@ namespace Prediktor.UA.Client
 					historyData[i] = new Result<HistoryData>(Opc.Ua.StatusCodes.BadUnknownResponse, string.Format("No history data for node id {0}", nodeIds[i].ToString()));
 				}
 			}
-			if (continuationPoints.Count > 0)
+
+			while (continuationPoints.Count > 0)
 			{
-				ReadContinuationPoints(session, read, continuationPoints, (data, merge) => data.DataValues.AddRange(merge.DataValues));
-			}
-			return historyData;
+                var cps = continuationPoints.ToArray();
+                continuationPoints.Clear();
+
+                var hrdc = new HistoryReadValueIdCollection();
+                hrdc.AddRange(cps.Select(cp => new HistoryReadValueId() { NodeId = cp.NodeId, ContinuationPoint = cp.ContinuationPoint }));
+
+                session.HistoryRead(null, readDetailsEx, TimestampsToReturn.Source, false, hrdc, out HistoryReadResultCollection res, out DiagnosticInfoCollection diag);
+
+                for (int i = 0; i < res.Count; i++)
+                {
+					if (historyData[cps[i].Index].Success)
+					{
+						if (Opc.Ua.StatusCode.IsGood(res[i].StatusCode))
+						{
+							HistoryData values = ExtensionObject.ToEncodeable(res[i].HistoryData) as HistoryData;
+							if (values != null)
+							{
+								historyData[cps[i].Index].Value.DataValues.AddRange(values.DataValues);
+
+								if (res[i].ContinuationPoint != null)
+								{
+									continuationPoints.Add(new ContPoint<HistoryData>(i, nodeIds[i], values, res[i].ContinuationPoint));
+								}
+							}
+						}
+						else
+						{
+							historyData[cps[i].Index] = new Result<HistoryData>(res[i].StatusCode, string.Format("Error reading node id {0}", nodeIds[i].ToString()));
+						}
+					}
+                }
+            }
+            return historyData;
 		}
 
 		public static Result<HistoryData>[] ReadHistoryProcessed(this Session session, DateTime startTime, DateTime endTime, NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds)
@@ -385,16 +417,14 @@ namespace Prediktor.UA.Client
 				Processed = true
 			}));
 
-			//AggregateConfiguration aggregate = new AggregateConfiguration();
 			NodeIdCollection aggregateTypes = new NodeIdCollection();
 			for (int i = 0; i < nodeIds.Length; i++)
 				aggregateTypes.Add(aggregateNodeId);
+
 			ReadProcessedDetails readDetails = new ReadProcessedDetails
 			{
 				StartTime = startTime,
 				EndTime = endTime,
-			
-				//AggregateConfiguration = null,
 				AggregateType = aggregateTypes,
 				ProcessingInterval = processingInterval
 			};
@@ -411,7 +441,7 @@ namespace Prediktor.UA.Client
 			ClientBase.ValidateDiagnosticInfos(diagnosticInfos, nodesToRead);
 
 			var historyData = new Result<HistoryData>[result.Count];
-			var continuationPoints = new List<ContPoint<HistoryData>>();
+
 			for (int i = 0; i < result.Count; i++)
 			{
 				if (StatusCode.IsBad(result[i].StatusCode))
@@ -422,22 +452,14 @@ namespace Prediktor.UA.Client
 				{
 					HistoryData values = ExtensionObject.ToEncodeable(result[i].HistoryData) as HistoryData;
 					historyData[i] = new Result<HistoryData>(values);
-					if (result[i].ContinuationPoint != null)
-					{
-						continuationPoints.Add(new ContPoint<HistoryData>(nodeIds[i], values, result[i].ContinuationPoint));
-					}
 				}
 				else
 				{
 					historyData[i] = new Result<HistoryData>(Opc.Ua.StatusCodes.BadUnknownResponse, string.Format("No history data for node id {0}", nodeIds[i].ToString()));
 				}
 			}
-			if (continuationPoints.Count > 0)
-			{
-				ReadContinuationPoints(session, readDetails, continuationPoints, (data, merge) => data.DataValues.AddRange(merge.DataValues));
-			}
-			return historyData;
 
+			return historyData;
 		}
 	}
 }

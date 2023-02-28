@@ -60,9 +60,17 @@ namespace Prediktor.UA.Console
 					}
 
 
-					//nodeId = new NodeId("V|Worker2.Sine", 2);
-					//System.Console.WriteLine("Secure: History Read node: " + nodeId.ToString());
-					//ReadHistoryRawDataAnonymouslySecure(server, nodeId);
+					//Apis nodes
+					//nodeId = new NodeId("V|Worker.Signal1", 2);
+					//var nodeId2 = new NodeId("V|Worker.Signal2", 2);
+
+					//Unified Automation, UaCPPServer
+					//nodeId = new NodeId("Demo.History.DoubleWithHistory", 2);
+					//var nodeId2 = new NodeId("Demo.History.ByteWithHistory", 2);
+
+					//ReadHistoryRaw(server, new [] { nodeId, nodeId2});
+					//ReadHistoryProcessed(server, new[] { nodeId, nodeId2 });
+
 				}
 				catch (Exception e)
 				{
@@ -124,9 +132,11 @@ namespace Prediktor.UA.Console
 				return value.Substring(targetKey.Length);
 
 			return "opc.tcp://localhost:4850";
-		}
 
-		private static void ReadAnonynouslyUnsecure(string server, Opc.Ua.NodeId nodeId)
+            //return "opc.tcp://localhost:48010";
+        }
+
+        private static void ReadAnonynouslyUnsecure(string server, Opc.Ua.NodeId nodeId)
 		{
 			var fact = new ApplicationConfigurationFactory();
 			var appConfig = fact.LoadFromFile("uaconfig.xml", false);
@@ -292,64 +302,209 @@ namespace Prediktor.UA.Console
 			return builder.ToString();
 		}
 
-		private static void ReadHistoryRawDataAnonymouslySecure(string server, Opc.Ua.NodeId nodeId)
-		{
-			HistoryReadResultCollection results;
-			DiagnosticInfoCollection diag;
-			var fact = new ApplicationConfigurationFactory();
-			var appConfig = fact.LoadFromFile("uaconfig.xml", true);
-			var sessionFactory = new SessionFactory(cert => true);
-			using (var session = sessionFactory.CreateSession(server, "secureanonymous", new UserIdentity(new AnonymousIdentityToken()), true, false, appConfig))
-			{
-				var hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId } });
-				var read = GetRawDataDetails(DateTime.Now.AddMinutes(-10), DateTime.Now, 2);
-				var response = session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out results, out diag);
-				var r = response.ServiceResult;
-				if (Opc.Ua.StatusCode.IsGood(r))
-				{
-					if (StatusCode.IsGood(results[0].StatusCode))
-					{
-						HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
-						if (data != null && data.DataValues != null)
-						{
-							for (int i = 0; i < data.DataValues.Count; i++)
-								System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
+        private static void ReadHistoryRawDataAnonymouslySecure(string server, Opc.Ua.NodeId nodeId)
+        {
+            HistoryReadResultCollection results;
+            DiagnosticInfoCollection diag;
+            var fact = new ApplicationConfigurationFactory();
+            var appConfig = fact.LoadFromFile("uaconfig.xml", true);
+            var sessionFactory = new SessionFactory(cert => true);
+            using (var session = sessionFactory.CreateSession(server, "secureanonymous", new UserIdentity(new AnonymousIdentityToken()), true, false, appConfig))
+            {
+                var hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId } });
+                var read = GetRawDataDetails(DateTime.Now.AddHours(-10), DateTime.Now, 2);
+                var response = session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out results, out diag);
+                var r = response.ServiceResult;
+                if (Opc.Ua.StatusCode.IsGood(r))
+                {
+                    if (StatusCode.IsGood(results[0].StatusCode))
+                    {
+                        HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
+                        if (data != null && data.DataValues != null)
+                        {
+                            for (int i = 0; i < data.DataValues.Count; i++)
+                                System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
 
-						}
-						var contPoints = results[0].ContinuationPoint;
-						HistoryReadResultCollection contres;
-						while (contPoints != null)
-						{
-							hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId, ContinuationPoint = contPoints } });
-							session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out contres, out diag);
-							if (Opc.Ua.StatusCode.IsGood(contres[0].StatusCode))
-							{
-								data = ExtensionObject.ToEncodeable(contres[0].HistoryData) as HistoryData;
-								if (data != null && data.DataValues != null)
-								{
-									for (int i = 0; i < data.DataValues.Count; i++)
-										System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
-								}
-								contPoints = contres[0].ContinuationPoint;
-							}
-						}
-					}
-					else
-						System.Console.WriteLine("Error: " + results[0].StatusCode);
-				}
-				else
-					System.Console.WriteLine("Error: " + r);
-			}
-		}
+                        }
+                        var contPoints = results[0].ContinuationPoint;
+                        HistoryReadResultCollection contres;
+                        while (contPoints != null)
+                        {
+                            hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId, ContinuationPoint = contPoints } });
+                            session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out contres, out diag);
+                            if (Opc.Ua.StatusCode.IsGood(contres[0].StatusCode))
+                            {
+                                data = ExtensionObject.ToEncodeable(contres[0].HistoryData) as HistoryData;
+                                if (data != null && data.DataValues != null)
+                                {
+                                    for (int i = 0; i < data.DataValues.Count; i++)
+                                        System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
+                                }
+                                contPoints = contres[0].ContinuationPoint;
+                            }
+                        }
+                    }
+                    else
+                        System.Console.WriteLine("Error: " + results[0].StatusCode);
+                }
+                else
+                    System.Console.WriteLine("Error: " + r);
+            }
+        }
 
-		/// <summary>
-		/// Gets HistoryReadDetails for reading raw data.
-		/// </summary>
-		/// <param name="startTime"></param>
-		/// <param name="endTime"></param>
-		/// <param name="numValues"></param>
-		/// <returns></returns>
-		private static HistoryReadDetails GetRawDataDetails(DateTime startTime, DateTime endTime, int numValues)
+        private static void ReadHistoryProcessed(string server, Opc.Ua.NodeId[] nodeIds)
+        {
+            HistoryReadResultCollection results;
+            DiagnosticInfoCollection diag;
+            var fact = new ApplicationConfigurationFactory();
+            var appConfig = fact.LoadFromFile("uaconfig.xml", true);
+            var sessionFactory = new SessionFactory(cert => true);
+            using (var session = sessionFactory.CreateSession(server, "anonymous", new UserIdentity(new AnonymousIdentityToken()), false, false, appConfig))
+            {
+
+                var aggrId = new NodeId((uint)2341);
+
+                try
+                {
+                    var historyData = session.ReadHistoryProcessed(DateTime.Now.AddHours(-1), DateTime.Now, aggrId, 1000.0, nodeIds);
+
+                    if (!historyData[0].Success)
+                    {
+                        System.Console.WriteLine("Failed: " + historyData[0].Error);
+                    }
+                    else
+                    {
+                        System.Console.WriteLine("historyData: " + historyData[0].Value.DataValues.Count);
+
+                        for (int i = 0; i < historyData[0].Value.DataValues.Count; i++)
+                        {
+                            System.Console.WriteLine($"{historyData[0].Value.DataValues[i]}\t{historyData[1].Value.DataValues[i]}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine("historyData: " + e.Message);
+                }
+            }
+        }
+
+        private static void ReadHistoryRaw(string server, Opc.Ua.NodeId[] nodeIds)
+        {
+            HistoryReadResultCollection results;
+            DiagnosticInfoCollection diag;
+            var fact = new ApplicationConfigurationFactory();
+            var appConfig = fact.LoadFromFile("uaconfig.xml", true);
+            var sessionFactory = new SessionFactory(cert => true);
+            using (var session = sessionFactory.CreateSession(server, "anonymous", new UserIdentity(new AnonymousIdentityToken()), false, false, appConfig))
+            {
+                try
+                {
+                    var historyData = session.ReadHistoryRaw(DateTime.Now.AddMinutes(-10), DateTime.Now, 10, nodeIds);
+
+                    if (!historyData[0].Success)
+                    {
+                        System.Console.WriteLine("Failed: " + historyData[0].Error);
+                    }
+                    else
+                    {
+                        System.Console.WriteLine("historyData: " + historyData[0].Value.DataValues.Count);
+
+                        for (int i = 0; i < Math.Max(historyData[0].Value.DataValues.Count, historyData[1].Value.DataValues.Count); i++)
+                        {
+                            var s1 = historyData[0].Value.DataValues.Count > i ? historyData[0].Value.DataValues[i].Value : "empty";
+                            var s2 = historyData[1].Value.DataValues.Count > i ? historyData[1].Value.DataValues[i].Value : "empty";
+                            System.Console.WriteLine($"{s1}\t{s2}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine("historyData: " + e.Message);
+                }
+            }
+        }
+
+        private static void ReadHistoryProcessedSecure(string server, Opc.Ua.NodeId[] nodeIds)
+        {
+            HistoryReadResultCollection results;
+            DiagnosticInfoCollection diag;
+            var fact = new ApplicationConfigurationFactory();
+            var appConfig = fact.LoadFromFile("uaconfig.xml", true);
+            var sessionFactory = new SessionFactory(cert => true);
+            using (var session = sessionFactory.CreateSession(server, "secureanonymous", new UserIdentity(new AnonymousIdentityToken()), true, false, appConfig))
+            {
+
+                var aggrId = new NodeId((uint)2341);
+
+                try
+                {
+                    var historyData = session.ReadHistoryProcessed(DateTime.Now.AddHours(-1), DateTime.Now, aggrId, 1000.0, nodeIds);
+
+                    System.Console.WriteLine("historyData: " + historyData[0].Value.DataValues.Count);
+
+                    for (int i = 0; i < historyData[0].Value.DataValues.Count; i++)
+                    {
+                        //System.Console.WriteLine($"{historyData[0].Value.DataValues[i]}");
+                    }
+                }
+                catch (Exception e)
+                {
+                    System.Console.WriteLine("historyData: ");
+                }
+
+                //         var hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId } });
+                //         var read = GetProcessedDetails(DateTime.Now.AddHours(-10), DateTime.Now, 2341, 0.5);
+                //         var response = session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out results, out diag);
+                //         var r = response.ServiceResult;
+                //         if (Opc.Ua.StatusCode.IsGood(r))
+                //         {
+                //             if (StatusCode.IsGood(results[0].StatusCode))
+                //             {
+                //                 HistoryData data = ExtensionObject.ToEncodeable(results[0].HistoryData) as HistoryData;
+                //                 if (data != null && data.DataValues != null)
+                //                 {
+                //for (int i = 0; i < data.DataValues.Count; i++)
+                //{
+                //	if(i %100 == 0)
+                //		System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
+                //}
+
+                //                 }
+                //                 var contPoints = results[0].ContinuationPoint;
+                //                 HistoryReadResultCollection contres;
+                //                 while (contPoints != null)
+                //                 {
+                //                     hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId, ContinuationPoint = contPoints } });
+                //                     session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out contres, out diag);
+                //                     if (Opc.Ua.StatusCode.IsGood(contres[0].StatusCode))
+                //                     {
+                //                         data = ExtensionObject.ToEncodeable(contres[0].HistoryData) as HistoryData;
+                //                         if (data != null && data.DataValues != null)
+                //                         {
+                //                             for (int i = 0; i < data.DataValues.Count; i++)
+                //                                 System.Console.WriteLine("Value is: " + data.DataValues[i].Value + " ---- Timestamp: " + data.DataValues[i].SourceTimestamp);
+                //                         }
+                //                         contPoints = contres[0].ContinuationPoint;
+                //                     }
+                //                 }
+                //             }
+                //             else
+                //                 System.Console.WriteLine("Error: " + results[0].StatusCode);
+                //         }
+                //         else
+                //             System.Console.WriteLine("Error: " + r);
+            }
+        }
+
+        /// <summary>
+        /// Gets HistoryReadDetails for reading raw data.
+        /// </summary>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="numValues"></param>
+        /// <returns></returns>
+        private static HistoryReadDetails GetRawDataDetails(DateTime startTime, DateTime endTime, int numValues)
 		{
 			return new ReadRawModifiedDetails()
 			{
