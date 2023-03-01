@@ -32,7 +32,9 @@ stages:
     - task: NuGetCommand@2
       displayName: 'Restore nuget solution'
       inputs:
+        command: 'restore'
         restoreSolution: '$(solution)'
+        feedsToUse: 'config'
 
     - task: gitversion/setup@0
       displayName: 'Setup GitVersion'
