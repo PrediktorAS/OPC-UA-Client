@@ -1,0 +1,137 @@
+variables:
+  buildConfiguration: 'Release'
+  isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  Agent.Source.Git.ShallowFetchDepth: 0
+
+stages:
+#######################################
+## Build, test and publish dotnet
+##
+- stage: DotnetStage
+  displayName: Build, test and publish dotnet
+  jobs:
+  - job: DotnetBuild
+    displayName: Build dotnet project
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+
+    - task: NuGetToolInstaller@0
+      displayName: 'Install correct nuget tool version'
+      inputs:
+        versionSpec: '>=5.2'
+
+    - task: UseDotNet@2
+      displayName: 'Set up to use correct dotnet version'
+      inputs:
+        packageType: 'sdk'
+        version: '6.x'
+    
+    - task: NuGetCommand@2
+      displayName: 'Restore nuget solution'
+      inputs:
+        command: 'restore'
+        restoreSolution: '$(solution)'
+        feedsToUse: 'config'
+
+    - task: gitversion/setup@0
+      displayName: 'Setup GitVersion'
+      inputs:
+        versionSpec: '>=5.8.3'
+    
+    - task: gitversion/execute@0
+      displayName: 'Execute GitVersion'
+      name: Version
+
+    - script: echo current version is $(GitVersion.SemVer)
+      displayName: 'Print version'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'build'
+        projects: '**/*Prediktor.UA.Client.csproj'
+        arguments: '--configuration $(buildConfiguration)'
+      displayName: 'dotnet build $(buildConfiguration)'
+
+    - task: DotNetCoreCLI@2
+      displayName: 'Create NuGet Package - Release Version'
+      inputs:
+        command: pack
+        packDirectory: '$(Build.ArtifactStagingDirectory)/packages/releases'
+        packagesToPack: '**/*Prediktor.UA.Client.csproj;!**/*.Tests.csproj'
+        arguments: '--configuration $(buildConfiguration)'
+        nobuild: true
+        includesymbols: true
+        versioningScheme: 'byEnvVar'
+        versionEnvVar: 'Version.GitVersion.NugetVersionV2'
+
+    - publish: '$(Build.ArtifactStagingDirectory)/packages'
+      artifact: 'packages'
+
+#######################################
+##  Publish and Tag
+##      
+
+- stage: PublishAndTag
+  displayName: Publish packages, and add tag in Git
+  dependsOn: DotnetStage
+  condition: and(succeeded(), eq(variables.isMain, true), ne(variables['Build.Reason'], 'PullRequest'))
+    
+  jobs:
+
+  - deployment:
+    variables:
+      Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.NugetVersionV2'] ]
+    pool:
+      vmImage: 'ubuntu-latest'
+    environment: 'nuget'
+    steps:
+
+    #- task: NuGetCommand@2
+    #  displayName: 'Push NuGet Package'
+    #  inputs:
+    #    command: 'push'
+    #    packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+    #    nuGetFeedType: 'external'
+    #    publishFeedCredentials: 'Prediktor_Nuget_Org'
+    #    allowPackageConflicts: true
+
+    - task: PowerShell@2
+      displayName: 'Display version of app'
+      inputs:
+        targetType: 'inline'
+        script: 'Write-Host "Version: $(Ver.NugetVersion)"'
+
+    - task: PowerShell@2
+      displayName: 'Git config user.email'
+      inputs:
+        targetType: 'inline'
+        script: |
+          git config --global user.email "rd_relmgr@prediktor.no"
+          Write-Host "Config success setting user email"
+
+    - task: PowerShell@2
+      displayName: 'Git config user.name'
+      inputs:
+        targetType: 'inline'
+        script: |
+            git config --global user.name "Build Pipeline"
+            Write-Host "Config success setting username"
+
+    - task: PowerShell@2
+      displayName: 'Git tag'
+      inputs:
+        targetType: 'inline'
+        script: |
+            git tag $(Ver.NugetVersion)
+            Write-Host "Successfully tagged: $(Ver.NugetVersion) for source $(Build.SourceVersion)"
+
+    - task: PowerShell@2
+      displayName: 'Push new tag'
+      inputs:
+        targetType: 'inline'
+        script: |
+            git push --tags
+            Write-Host "Successfully pushed all the tags"
