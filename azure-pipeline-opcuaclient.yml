@@ -1,6 +1,7 @@
 variables:
   buildConfiguration: 'Release'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
+  Agent.Source.Git.ShallowFetchDepth: 0
 
 stages:
 #######################################
