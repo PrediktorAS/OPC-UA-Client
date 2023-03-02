@@ -90,6 +90,10 @@ stages:
 
       steps:
 
+      - checkout: self
+        persistCredentials: true
+
+
     #- task: NuGetCommand@2
     #  displayName: 'Push NuGet Package'
     #  inputs:
