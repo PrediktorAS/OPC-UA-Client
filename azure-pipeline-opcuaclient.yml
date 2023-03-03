@@ -1,3 +1,4 @@
+
 variables:
   buildConfiguration: 'Release'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
@@ -34,8 +35,8 @@ stages:
         inputs:
           command: 'restore'
           restoreSolution: '$(solution)'
-          feedsToUse: 'select'
-          vstsFeed: 'e0d3b8c5-e77b-478d-898a-f0e6c1b91026/5d4b877a-c12a-4eec-a81f-d5e236547fa9'
+          feedsToUse: 'config'
+          externalFeedCredentials: 'Pred_nuget_03032023'
 
       - task: gitversion/setup@0
         displayName: 'Setup GitVersion'
@@ -79,65 +80,83 @@ stages:
     displayName: Publish packages, and add tag in Git
     dependsOn: DotnetStage
     condition: and(succeeded(), eq(variables.isMain, true), ne(variables['Build.Reason'], 'PullRequest'))
+    
     jobs:
-    - job: PushToNuget
-      displayName: Publish packages, and add tag in Git
 
-      pool:
-       vmImage: 'ubuntu-latest'
-
+    - deployment:
       variables:
-       Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.NugetVersionV2'] ]
+        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.NugetVersionV2'] ]
+      pool:
+        vmImage: 'ubuntu-latest'
+      environment: 'nuget'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
 
-      steps:
+            - task: NuGetToolInstaller@0
+              displayName: 'Install correct nuget tool version'
+              inputs:
+                versionSpec: '>=5.2'
 
-      - checkout: self
-        persistCredentials: true
+            - task: PowerShell@2
+              displayName: 'Publish to Nuget'
+              inputs:
+                targetType: 'inline'
+                script: |
+                  nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -NonInteractive
+                  Write-Host "Publish to Nuget succeded"
 
-      - task: NuGetCommand@2
-        displayName: 'Push NuGet Package'
-        inputs:
-          command: 'push'
-          packagesToPush: '$(Pipeline.Workspace)/**/drop/*.nupkg'                           
-          nuGetFeedType: 'external'
-          publishFeedCredentials: 'Prediktor_Nuget_Org'
-          allowPackageConflicts: true
+            #- task: NuGetAuthenticate@1
+            #  inputs:
+            #    nuGetServiceConnections: 'Pred_nuget_03032023'
+                
+            #- task: NuGetCommand@2
+            #  displayName: 'Push NuGet Package'
+            #  inputs:
+            #    command: 'push'
+            #    packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+            #    nuGetFeedType: 'external'
+            #    publishFeedCredentials: 'Pred_nuget_03032023'
+          on:
+            success:
+              steps:
+              - checkout: self
+                persistCredentials: true
+              - task: PowerShell@2
+                displayName: Display version of app
+                inputs:
+                  targetType: 'inline'
+                  script: 'Write-Host "Version: $(Ver.NugetVersion)"'
 
-      - task: PowerShell@2
-        displayName: 'Display version of app'
-        inputs:
-          targetType: 'inline'
-          script: 'Write-Host "Version: $(Ver.NugetVersion)"'
+              - task: PowerShell@2
+                displayName: 'Git config user.email'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git config --global user.email "rd_relmgr@prediktor.no"
+                    Write-Host "Config success setting user email"
 
-      - task: PowerShell@2
-        displayName: 'Git config user.email'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git config --global user.email "rd_relmgr@prediktor.no"
-            Write-Host "Config success setting user email"
+              - task: PowerShell@2
+                displayName: 'Git config user.name'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                     git config --global user.name "Build Pipeline"
+                     Write-Host "Config success setting username"
 
-      - task: PowerShell@2
-        displayName: 'Git config user.name'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git config --global user.name "Build Pipeline"
-            Write-Host "Config success setting username"
+              - task: PowerShell@2
+                displayName: 'Git tag'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git tag $(Ver.NugetVersion)
+                    Write-Host "Successfully tagged: $(Ver.NugetVersion) for source $(Build.SourceVersion)"
 
-      - task: PowerShell@2
-        displayName: 'Git tag'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git tag $(Ver.NugetVersion)
-            Write-Host "Successfully tagged: $(Ver.NugetVersion) for source $(Build.SourceVersion)"
-
-      - task: PowerShell@2
-        displayName: 'Push new tag'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git push --tags
-            Write-Host "Successfully pushed all the tags"
-            
+              - task: PowerShell@2
+                displayName: 'Push new tag'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git push --tags
+                    Write-Host "Successfully pushed all the tags"
