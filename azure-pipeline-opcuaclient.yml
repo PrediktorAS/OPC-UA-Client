@@ -97,7 +97,7 @@ stages:
               inputs:
                 command: 'push'
                 packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
-                nuGetFeedType: 'internal'
+                nuGetFeedType: 'external'
                 publishFeedCredentials: 'Prediktor_Nuget_Org'
                 allowPackageConflicts: true
           on:
