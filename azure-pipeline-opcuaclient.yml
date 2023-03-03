@@ -104,7 +104,7 @@ stages:
               inputs:
                 targetType: 'inline'
                 script: |
-                  nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -NonInteractive
+                  nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -Verbosity Detailed -NonInteractive
                   Write-Host "Publish to Nuget succeded"
 
             #- task: NuGetAuthenticate@1
