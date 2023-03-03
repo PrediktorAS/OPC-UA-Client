@@ -34,7 +34,8 @@ stages:
         inputs:
           command: 'restore'
           restoreSolution: '$(solution)'
-          feedsToUse: 'config'
+          feedsToUse: 'select'
+          vstsFeed: 'e0d3b8c5-e77b-478d-898a-f0e6c1b91026/5d4b877a-c12a-4eec-a81f-d5e236547fa9'
 
       - task: gitversion/setup@0
         displayName: 'Setup GitVersion'
