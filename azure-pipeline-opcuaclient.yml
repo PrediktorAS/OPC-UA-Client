@@ -93,6 +93,15 @@ stages:
       - checkout: self
         persistCredentials: true
 
+      - task: NuGetCommand@2
+        displayName: 'Push NuGet Package'
+        inputs:
+          command: 'push'
+          packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+          nuGetFeedType: 'external'
+          publishFeedCredentials: 'Prediktor_Nuget_Org'
+          allowPackageConflicts: true
+
       - task: PowerShell@2
         displayName: 'Display version of app'
         inputs:
@@ -131,12 +140,3 @@ stages:
             git push --tags
             Write-Host "Successfully pushed all the tags"
             
-      #- task: NuGetCommand@2
-      #  displayName: 'Push NuGet Package'
-      #  inputs:
-      #    command: 'push'
-      #    packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
-      #    nuGetFeedType: 'external'
-      #    publishFeedCredentials: 'Prediktor_Nuget_Org'
-      #    allowPackageConflicts: true
-
