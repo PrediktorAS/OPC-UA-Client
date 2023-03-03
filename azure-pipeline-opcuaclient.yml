@@ -79,65 +79,66 @@ stages:
     displayName: Publish packages, and add tag in Git
     dependsOn: DotnetStage
     condition: and(succeeded(), eq(variables.isMain, true), ne(variables['Build.Reason'], 'PullRequest'))
+    
     jobs:
-    - job: PushToNuget
-      displayName: Publish packages, and add tag in Git
 
-      pool:
-       vmImage: 'ubuntu-latest'
-
+    - deployment:
       variables:
-       Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.NugetVersionV2'] ]
+        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.NugetVersionV2'] ]
+      pool:
+        vmImage: 'ubuntu-latest'
+      environment: 'nuget'
+      strategy:
+        runOnce:
+          deploy:
+            steps:
+            - task: NuGetCommand@2
+              displayName: 'Push NuGet Package'
+              inputs:
+                command: 'push'
+                packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+                nuGetFeedType: 'internal'
+                publishFeedCredentials: 'Prediktor_Nuget_Org'
+                allowPackageConflicts: true
+          on:
+            success:
+              steps:
+              - checkout: self
+                persistCredentials: true
+              - task: PowerShell@2
+                displayName: Display version of app
+                inputs:
+                  targetType: 'inline'
+                  script: 'Write-Host "Version: $(Ver.NugetVersion)"'
 
-      steps:
+              - task: PowerShell@2
+                displayName: 'Git config user.email'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git config --global user.email "rd_relmgr@prediktor.no"
+                    Write-Host "Config success setting user email"
 
-      - checkout: self
-        persistCredentials: true
+              - task: PowerShell@2
+                displayName: 'Git config user.name'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                     git config --global user.name "Build Pipeline"
+                     Write-Host "Config success setting username"
 
-      - task: NuGetCommand@2
-        displayName: 'Push NuGet Package'
-        inputs:
-          command: 'push'
-          packagesToPush: '$(Pipeline.Workspace)/**/drop/*.nupkg'                           
-          nuGetFeedType: 'external'
-          publishFeedCredentials: 'Prediktor_Nuget_Org'
-          allowPackageConflicts: true
+              - task: PowerShell@2
+                displayName: 'Git tag'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git tag $(Ver.NugetVersion)
+                    Write-Host "Successfully tagged: $(Ver.NugetVersion) for source $(Build.SourceVersion)"
 
-      - task: PowerShell@2
-        displayName: 'Display version of app'
-        inputs:
-          targetType: 'inline'
-          script: 'Write-Host "Version: $(Ver.NugetVersion)"'
-
-      - task: PowerShell@2
-        displayName: 'Git config user.email'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git config --global user.email "rd_relmgr@prediktor.no"
-            Write-Host "Config success setting user email"
-
-      - task: PowerShell@2
-        displayName: 'Git config user.name'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git config --global user.name "Build Pipeline"
-            Write-Host "Config success setting username"
-
-      - task: PowerShell@2
-        displayName: 'Git tag'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git tag $(Ver.NugetVersion)
-            Write-Host "Successfully tagged: $(Ver.NugetVersion) for source $(Build.SourceVersion)"
-
-      - task: PowerShell@2
-        displayName: 'Push new tag'
-        inputs:
-          targetType: 'inline'
-          script: |
-            git push --tags
-            Write-Host "Successfully pushed all the tags"
-            
+              - task: PowerShell@2
+                displayName: 'Push new tag'
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git push --tags
+                    Write-Host "Successfully pushed all the tags"
