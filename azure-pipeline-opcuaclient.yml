@@ -97,7 +97,7 @@ stages:
         displayName: 'Push NuGet Package'
         inputs:
           command: 'push'
-          packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+          packagesToPush: '$(Pipeline.Workspace)/**/drop/*.nupkg'                           
           nuGetFeedType: 'external'
           publishFeedCredentials: 'Prediktor_Nuget_Org'
           allowPackageConflicts: true
