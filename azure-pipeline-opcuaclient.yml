@@ -1,3 +1,4 @@
+
 variables:
   buildConfiguration: 'Release'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
@@ -92,28 +93,31 @@ stages:
         runOnce:
           deploy:
             steps:
-            - task: UseDotNet@2
-              displayName: 'Set up to use correct dotnet version'
-              inputs:
-                packageType: 'sdk'
-                version: '6.x'
 
             - task: NuGetToolInstaller@0
               displayName: 'Install correct nuget tool version'
               inputs:
                 versionSpec: '>=5.2'
 
-            - task: NuGetAuthenticate@1
+            - task: PowerShell@2
+              displayName: 'Publish to Nuget'
               inputs:
-                nuGetServiceConnections: 'Pred_nuget_03032023'
+                targetType: 'inline'
+                script: |
+                  nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -NonInteractive
+                  Write-Host "Publish to Nuget succeded"
+
+            #- task: NuGetAuthenticate@1
+            #  inputs:
+            #    nuGetServiceConnections: 'Pred_nuget_03032023'
                 
-            - task: NuGetCommand@2
-              displayName: 'Push NuGet Package'
-              inputs:
-                command: 'push'
-                packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
-                nuGetFeedType: 'external'
-                publishFeedCredentials: 'Pred_nuget_03032023'
+            #- task: NuGetCommand@2
+            #  displayName: 'Push NuGet Package'
+            #  inputs:
+            #    command: 'push'
+            #    packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+            #    nuGetFeedType: 'external'
+            #    publishFeedCredentials: 'Pred_nuget_03032023'
           on:
             success:
               steps:
