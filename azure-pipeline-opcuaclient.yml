@@ -35,7 +35,7 @@ stages:
           command: 'restore'
           restoreSolution: '$(solution)'
           feedsToUse: 'config'
-          externalFeedCredentials: 'Prediktor_Nuget_Org'
+          externalFeedCredentials: 'Pred_nuget_03032023'
 
       - task: gitversion/setup@0
         displayName: 'Setup GitVersion'
@@ -94,15 +94,14 @@ stages:
             steps:
             - task: NuGetAuthenticate@1
               inputs:
-                nuGetServiceConnections: 'Prediktor_Nuget_Org'
+                nuGetServiceConnections: 'Pred_nuget_03032023'
             - task: NuGetCommand@2
               displayName: 'Push NuGet Package'
               inputs:
                 command: 'push'
                 packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
                 nuGetFeedType: 'external'
-                publishFeedCredentials: 'Prediktor_Nuget_Org'
-                allowPackageConflicts: true
+                publishFeedCredentials: 'Pred_nuget_03032023'
           on:
             success:
               steps:
