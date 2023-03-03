@@ -92,6 +92,9 @@ stages:
         runOnce:
           deploy:
             steps:
+            - task: NuGetAuthenticate@1
+              inputs:
+                nuGetServiceConnections: 'Prediktor_Nuget_Org'
             - task: NuGetCommand@2
               displayName: 'Push NuGet Package'
               inputs:
