@@ -99,25 +99,25 @@ stages:
               inputs:
                 versionSpec: '>=5.2'
 
-            - task: PowerShell@2
-              displayName: 'Publish to Nuget'
-              inputs:
-                targetType: 'inline'
-                script: |
-                  nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -Verbosity Detailed -NonInteractive
-                  Write-Host "Publish to Nuget succeded"
+            # - task: PowerShell@2
+            #   displayName: 'Publish to Nuget'
+            #   inputs:
+            #     targetType: 'inline'
+            #     script: |
+            #       nuget push $(Pipeline.Workspace)/packages/releases/*.nupkg -Source https://api.nuget.org/v3/index.json -ApiKey $(NUGET_API_KEY) -Verbosity Detailed -NonInteractive
+            #       Write-Host "Publish to Nuget succeded"
 
             #- task: NuGetAuthenticate@1
             #  inputs:
             #    nuGetServiceConnections: 'Pred_nuget_03032023'
                 
-            #- task: NuGetCommand@2
-            #  displayName: 'Push NuGet Package'
-            #  inputs:
-            #    command: 'push'
-            #    packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
-            #    nuGetFeedType: 'external'
-            #    publishFeedCredentials: 'Pred_nuget_03032023'
+            - task: NuGetCommand@2
+              displayName: 'Push NuGet Package'
+              inputs:
+                command: 'push'
+                packagesToPush: '$(Pipeline.Workspace)/packages/releases/*.nupkg'
+                nuGetFeedType: 'external'
+                publishFeedCredentials: 'Pred_nuget_03032023'
           on:
             success:
               steps:
