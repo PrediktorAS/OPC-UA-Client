@@ -1,9 +1,12 @@
-﻿using Opc.Ua;
+﻿using Newtonsoft.Json.Linq;
+using Opc.Ua;
 using Opc.Ua.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Prediktor.UA.Client
 {
@@ -324,7 +327,8 @@ namespace Prediktor.UA.Client
 		}
 
 
-		public static Result<HistoryData>[] ReadHistoryRaw(this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, bool returnBounds = false)
+		public static Result<HistoryData>[] ReadHistoryRaw(this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, 
+			bool returnBounds = false, bool useContinuationPoints = true)
 		{
 			RequestHeader requestHeader = new RequestHeader();
 
@@ -371,7 +375,7 @@ namespace Prediktor.UA.Client
 				}
 			}
 
-			while (continuationPoints.Count > 0)
+			while (continuationPoints.Count > 0 && useContinuationPoints)
 			{
                 var cps = continuationPoints.ToArray();
                 continuationPoints.Clear();
@@ -408,7 +412,92 @@ namespace Prediktor.UA.Client
             return historyData;
 		}
 
-		public static Result<HistoryData>[] ReadHistoryProcessed(this Session session, DateTime startTime, DateTime endTime, NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds)
+        public static async Task<Result<HistoryData>[]> ReadHistoryRawAsync
+            (this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, CancellationToken ct,
+            bool returnBounds = false, bool useContinuationPoints = true)
+        {
+            RequestHeader requestHeader = new RequestHeader();
+
+            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            nodesToRead.AddRange(nodeIds.Select(n => new HistoryReadValueId()
+            {
+                NodeId = n,
+            }));
+
+            HistoryReadDetails readDetails = new ReadRawModifiedDetails()
+            {
+                StartTime = startTime,
+                EndTime = endTime,
+                NumValuesPerNode = (uint)numValues,
+                ReturnBounds = returnBounds,
+                IsReadModified = false
+            };
+
+            var readDetailsEx = new ExtensionObject(readDetails);
+
+            var result = await session.HistoryReadAsync(requestHeader, readDetailsEx, TimestampsToReturn.Both, false, nodesToRead, ct);
+
+            var historyData = new Result<HistoryData>[result.Results.Count];
+            var continuationPoints = new List<ContPoint<HistoryData>>();
+            for (int i = 0; i < result.Results.Count; i++)
+            {
+                if (StatusCode.IsBad(result.Results[i].StatusCode))
+                {
+                    historyData[i] = new Result<HistoryData>(result.Results[i].StatusCode, string.Format("Error reading node id {0}", nodeIds[i].ToString()));
+                }
+                else if (result.Results[i].HistoryData != null)
+                {
+                    HistoryData values = ExtensionObject.ToEncodeable(result.Results[i].HistoryData) as HistoryData;
+                    historyData[i] = new Result<HistoryData>(values);
+                    if (result.Results[i].ContinuationPoint != null)
+                    {
+                        continuationPoints.Add(new ContPoint<HistoryData>(i, nodeIds[i], values, result.Results[i].ContinuationPoint));
+                    }
+                }
+                else
+                {
+                    historyData[i] = new Result<HistoryData>(Opc.Ua.StatusCodes.BadUnknownResponse, string.Format("No history data for node id {0}", nodeIds[i].ToString()));
+                }
+            }
+
+            while (continuationPoints.Count > 0 && useContinuationPoints)
+            {
+                var cps = continuationPoints.ToArray();
+                continuationPoints.Clear();
+
+                var hrdc = new HistoryReadValueIdCollection();
+                hrdc.AddRange(cps.Select(cp => new HistoryReadValueId() { NodeId = cp.NodeId, ContinuationPoint = cp.ContinuationPoint }));
+
+                var res = await session.HistoryReadAsync(requestHeader, readDetailsEx, TimestampsToReturn.Both, false, hrdc, ct);
+
+                for (int i = 0; i < res.Results.Count; i++)
+                {
+                    if (historyData[cps[i].Index].Success)
+                    {
+                        if (Opc.Ua.StatusCode.IsGood(res.Results[i].StatusCode))
+                        {
+                            HistoryData values = ExtensionObject.ToEncodeable(res.Results[i].HistoryData) as HistoryData;
+                            if (values != null)
+                            {
+                                historyData[cps[i].Index].Value.DataValues.AddRange(values.DataValues);
+
+                                if (res.Results[i].ContinuationPoint != null)
+                                {
+                                    continuationPoints.Add(new ContPoint<HistoryData>(i, nodeIds[i], values, res.Results[i].ContinuationPoint));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            historyData[cps[i].Index] = new Result<HistoryData>(res.Results[i].StatusCode, string.Format("Error reading node id {0}", nodeIds[i].ToString()));
+                        }
+                    }
+                }
+            }
+            return historyData;
+        }
+
+        public static Result<HistoryData>[] ReadHistoryProcessed(this Session session, DateTime startTime, DateTime endTime, NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds)
 		{
 			HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
 			nodesToRead.AddRange(nodeIds.Select(n => new HistoryReadValueId()
@@ -461,5 +550,59 @@ namespace Prediktor.UA.Client
 
 			return historyData;
 		}
-	}
+
+        public static async Task<Result<HistoryData>[]> ReadHistoryProcessedAsync(this Session session, DateTime startTime, DateTime endTime, 
+			NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds, CancellationToken ct)
+        {
+            HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
+            nodesToRead.AddRange(nodeIds.Select(n => new HistoryReadValueId()
+            {
+                NodeId = n,
+                Processed = true
+            }));
+
+            NodeIdCollection aggregateTypes = new NodeIdCollection();
+            for (int i = 0; i < nodeIds.Length; i++)
+                aggregateTypes.Add(aggregateNodeId);
+
+            ReadProcessedDetails readDetails = new ReadProcessedDetails
+            {
+                StartTime = startTime,
+                EndTime = endTime,
+                AggregateType = aggregateTypes,
+                ProcessingInterval = processingInterval
+            };
+
+            var result = await session.HistoryReadAsync(
+                null,
+                new ExtensionObject(readDetails),
+                TimestampsToReturn.Both,
+                false,
+                nodesToRead,
+                ct);
+
+            ClientBase.ValidateDiagnosticInfos(result.DiagnosticInfos, nodesToRead);
+
+            var historyData = new Result<HistoryData>[result.Results.Count];
+
+            for (int i = 0; i < result.Results.Count; i++)
+            {
+                if (StatusCode.IsBad(result.Results[i].StatusCode))
+                {
+                    historyData[i] = new Result<HistoryData>(result.Results[i].StatusCode, string.Format("Error reading node id {0}", nodeIds[i].ToString()));
+                }
+                else if (result.Results[i].HistoryData != null)
+                {
+                    HistoryData values = ExtensionObject.ToEncodeable(result.Results[i].HistoryData) as HistoryData;
+                    historyData[i] = new Result<HistoryData>(values);
+                }
+                else
+                {
+                    historyData[i] = new Result<HistoryData>(Opc.Ua.StatusCodes.BadUnknownResponse, string.Format("No history data for node id {0}", nodeIds[i].ToString()));
+                }
+            }
+
+            return historyData;
+        }
+    }
 }
