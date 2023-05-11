@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -6,7 +6,7 @@
   </PropertyGroup>
 	
 	<ItemGroup>
-	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.370.12" />
+	  <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.4.371.86" />
 	  <PackageReference Include="Prediktor.Log" Version="1.0.8" />
 	  <PackageReference Include="GitVersion.MsBuild" Version="5.12.0">
 		<PrivateAssets>all</PrivateAssets>
