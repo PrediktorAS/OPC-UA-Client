@@ -17,7 +17,7 @@ namespace Prediktor.UA.Client
 		/// <param name="session"></param>
 		/// <param name="nodeToBrowse"></param>
 		/// <returns></returns>
-		public static ReferenceDescriptionCollection Browse(this Session session, NodeId nodeToBrowse)
+		public static ReferenceDescriptionCollection Browse(this ISession session, NodeId nodeToBrowse)
 		{
 			session.Browse(
 				null,
@@ -49,7 +49,7 @@ namespace Prediktor.UA.Client
 		/// <param name="nodeToBrowse"></param>
 		/// <param name="nodeClassMask"></param>
 		/// <returns></returns>
-		public static ReferenceDescriptionCollection Browse(this Session session, NodeId nodeToBrowse, uint nodeClassMask)
+		public static ReferenceDescriptionCollection Browse(this ISession session, NodeId nodeToBrowse, uint nodeClassMask)
 		{
 			session.Browse(
 				null,
@@ -83,7 +83,7 @@ namespace Prediktor.UA.Client
 		/// <param name="nodeToBrowse"></param>
 		/// <param name="nodeClassMask"></param>
 		/// <returns></returns>
-		public static ReferenceDescriptionCollection Browse(this Session session, NodeId nodeToBrowse, uint nodeClassMask, uint maxResultsToReturn)
+		public static ReferenceDescriptionCollection Browse(this ISession session, NodeId nodeToBrowse, uint nodeClassMask, uint maxResultsToReturn)
 		{
 			session.Browse(
 				null,
@@ -127,7 +127,7 @@ namespace Prediktor.UA.Client
 		/// <param name="nodeId"></param>
 		/// <param name="attributeIds"></param>
 		/// <returns>Array of Result objects in accordance with the size and order of attributeIds. Test for Success before using the value</returns>
-		public static Result<object>[] ReadAttributes(this Session session, NodeId nodeId, uint[] attributeIds)
+		public static Result<object>[] ReadAttributes(this ISession session, NodeId nodeId, uint[] attributeIds)
 		{
 			var res = new Result<object>[attributeIds.Length];
 			var nodes = new Opc.Ua.ReadValueIdCollection();
@@ -164,7 +164,7 @@ namespace Prediktor.UA.Client
 		/// <param name="nodeIds"></param>
 		/// <param name="attributeIds"></param>
 		/// <returns>Array of Result objects in accordance with the size and order of nodeIds and attributeIds. Test for Success before using the value</returns>
-		public static Result<object>[] ReadAttributes(this Session session, NodeId[] nodeIds, uint[] attributeIds)
+		public static Result<object>[] ReadAttributes(this ISession session, NodeId[] nodeIds, uint[] attributeIds)
 		{
 			var res = new Result<object>[nodeIds.Length * attributeIds.Length];
 			var nodes = new Opc.Ua.ReadValueIdCollection();
@@ -206,7 +206,7 @@ namespace Prediktor.UA.Client
 			return res;
 		}
 
-		public static Result<HistoryEvent>[] ReadEvents(this Session session, DateTime startTime, DateTime endTime, uint numValuesPerNode, EventFilter eventFilter, NodeId[] nodeIds)
+		public static Result<HistoryEvent>[] ReadEvents(this ISession session, DateTime startTime, DateTime endTime, uint numValuesPerNode, EventFilter eventFilter, NodeId[] nodeIds)
 		{
 			HistoryReadResultCollection res;
 			DiagnosticInfoCollection diag;
@@ -252,7 +252,7 @@ namespace Prediktor.UA.Client
 		/// </summary>
 		/// <param name="nodeId">node id</param>
 		/// <returns>DataValue</returns>
-		public static DataValue[] ReadNodeValues(this Session session, NodeId[] nodeIds)
+		public static DataValue[] ReadNodeValues(this ISession session, NodeId[] nodeIds)
 		{
 			ReadValueIdCollection nodesToRead = new ReadValueIdCollection();
 			nodesToRead.AddRange(nodeIds.Select(n => new ReadValueId()
@@ -292,7 +292,7 @@ namespace Prediktor.UA.Client
 			public NodeId NodeId { get; }
 		}
 
-		private static void ReadContinuationPoints<T>(Session session, HistoryReadDetails readDetails, List<ContPoint<T>> contpoints, Action<T, T> merge)
+		private static void ReadContinuationPoints<T>(ISession session, HistoryReadDetails readDetails, List<ContPoint<T>> contpoints, Action<T, T> merge)
 			where T : class
 		{
 			var cps = contpoints.ToArray();
@@ -326,7 +326,7 @@ namespace Prediktor.UA.Client
 		}
 
 
-		public static Result<HistoryData>[] ReadHistoryRaw(this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, 
+		public static Result<HistoryData>[] ReadHistoryRaw(this ISession session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, 
 			bool returnBounds = false, bool useContinuationPoints = true)
 		{
 			RequestHeader requestHeader = new RequestHeader();
@@ -412,7 +412,7 @@ namespace Prediktor.UA.Client
 		}
 
         public static async Task<Result<HistoryData>[]> ReadHistoryRawAsync
-            (this Session session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, CancellationToken ct,
+            (this ISession session, DateTime startTime, DateTime endTime, int numValues, NodeId[] nodeIds, CancellationToken ct,
             bool returnBounds = false, bool useContinuationPoints = true)
         {
             RequestHeader requestHeader = new RequestHeader();
@@ -496,7 +496,7 @@ namespace Prediktor.UA.Client
             return historyData;
         }
 
-        public static Result<HistoryData>[] ReadHistoryProcessed(this Session session, DateTime startTime, DateTime endTime, NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds)
+        public static Result<HistoryData>[] ReadHistoryProcessed(this ISession session, DateTime startTime, DateTime endTime, NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds)
 		{
 			HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
 			nodesToRead.AddRange(nodeIds.Select(n => new HistoryReadValueId()
@@ -550,7 +550,7 @@ namespace Prediktor.UA.Client
 			return historyData;
 		}
 
-        public static async Task<Result<HistoryData>[]> ReadHistoryProcessedAsync(this Session session, DateTime startTime, DateTime endTime, 
+        public static async Task<Result<HistoryData>[]> ReadHistoryProcessedAsync(this ISession session, DateTime startTime, DateTime endTime, 
 			NodeId aggregateNodeId, double processingInterval, NodeId[] nodeIds, CancellationToken ct)
         {
             HistoryReadValueIdCollection nodesToRead = new HistoryReadValueIdCollection();
