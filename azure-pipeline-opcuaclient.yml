@@ -67,7 +67,7 @@ stages:
           nobuild: true
           includesymbols: true
           versioningScheme: 'byEnvVar'
-          versionEnvVar: 'Version.GitVersion.NugetVersionV2'
+          versionEnvVar: 'GitVersion.MajorMinorPatch'
 
       - publish: '$(Build.ArtifactStagingDirectory)/packages'
         artifact: 'packages'
