@@ -57,6 +57,12 @@ stages:
           arguments: '--configuration $(buildConfiguration)'
         displayName: 'dotnet build $(buildConfiguration)'
 
+      - script: echo current version is $(Version.GitVersion.NugetVersionV2)
+        displayName: 'Print NugetVersionV2 - 2'
+  
+      - script: echo current version is $(Version.GitVersion.NugetVersionV2)
+        displayName: 'Print NugetVersionV2 - 2' 
+
       - task: DotNetCoreCLI@2
         displayName: 'Create NuGet Package - Release Version'
         inputs:
