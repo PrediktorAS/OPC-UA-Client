@@ -46,8 +46,11 @@ stages:
       - task: gitversion/execute@0
         displayName: 'Execute GitVersion'
         name: Version
+        inputs:
+            useConfigFile: true
+            configFilePath: 'gitversion.yml'
 
-      - script: echo current version is $(GitVersion.SemVer)
+      - script: echo current version is $(GitVersion.MajorMinorPatch)
         displayName: 'Print version'
 
       - task: DotNetCoreCLI@2
