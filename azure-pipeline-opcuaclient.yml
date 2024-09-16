@@ -143,3 +143,4 @@ stages:
                   script: |
                     git push --tags
                     Write-Host "Successfully pushed all the tags"
+
