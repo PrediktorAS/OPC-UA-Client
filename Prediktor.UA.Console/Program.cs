@@ -1,14 +1,10 @@
 ﻿using Opc.Ua;
-using Opc.Ua.Configuration;
 using Prediktor.UA.Client;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Threading.Tasks;
-using System.Security.Cryptography;
 namespace Prediktor.UA.Console
 {
 	class Program
@@ -354,8 +350,6 @@ namespace Prediktor.UA.Console
 
         private static void ReadHistoryProcessed(string server, Opc.Ua.NodeId[] nodeIds)
         {
-            HistoryReadResultCollection results;
-            DiagnosticInfoCollection diag;
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
             var sessionFactory = new SessionFactory(cert => true);
@@ -391,8 +385,6 @@ namespace Prediktor.UA.Console
 
         private static void ReadHistoryRaw(string server, Opc.Ua.NodeId[] nodeIds)
         {
-            HistoryReadResultCollection results;
-            DiagnosticInfoCollection diag;
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
             var sessionFactory = new SessionFactory(cert => true);
@@ -427,8 +419,6 @@ namespace Prediktor.UA.Console
 
         private static void ReadHistoryProcessedSecure(string server, Opc.Ua.NodeId[] nodeIds)
         {
-            HistoryReadResultCollection results;
-            DiagnosticInfoCollection diag;
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
             var sessionFactory = new SessionFactory(cert => true);
@@ -450,7 +440,7 @@ namespace Prediktor.UA.Console
                 }
                 catch (Exception e)
                 {
-                    System.Console.WriteLine("historyData: ");
+                    System.Console.WriteLine("historyData: Error - {0}", e);
                 }
 
                 //         var hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId } });
