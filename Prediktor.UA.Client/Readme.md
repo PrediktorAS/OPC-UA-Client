@@ -4,7 +4,7 @@
 Purpose
 -------
 
-The purpose of this assembly is to make connecting to an OPC UA klient easier than what it is when using the OPC UA Foundations SDK directly. 
+The purpose of this assembly is to make connecting to an OPC UA client easier than what it is when using the OPC UA Foundations SDK directly. 
 This is done by creating a SessionFactory that handles the creation of the UA session. 
 Commonly used methods will be placed in SessionExtensions class as extension methods for the Session.
 

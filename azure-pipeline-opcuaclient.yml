@@ -28,7 +28,7 @@ stages:
         displayName: 'Set up to use correct dotnet version'
         inputs:
           packageType: 'sdk'
-          version: '6.x'
+          version: '8.x'
       
       - task: NuGetCommand@2
         displayName: 'Restore nuget solution'
