@@ -110,10 +110,10 @@ namespace Prediktor.UA.Client
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                     haveAppCertificate = appInstance.CheckApplicationInstanceCertificate(true, 0).Result;
+                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificates(true, 0).Result;
                     if (!haveAppCertificate)
                     {
-                        throw new Exception("Application instance certificate invalid!");
+                        throw new Exception("Application instance certificates invalid!");
                     }
                 }
                 applicationConfig.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate);
@@ -175,7 +175,7 @@ namespace Prediktor.UA.Client
             }
             else
 			{
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(endpointURL, useSecurity, operationTimeout);
+                var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, endpointURL, useSecurity, operationTimeout);
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
                 return Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout,
@@ -192,7 +192,7 @@ namespace Prediktor.UA.Client
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificate(true, 0).Result;
+                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificates(true, 0).Result;
                     if (!haveAppCertificate)
                     {
                         throw new Exception("Application instance certificate invalid!");
@@ -235,7 +235,7 @@ namespace Prediktor.UA.Client
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                    haveAppCertificate = await appInstance.CheckApplicationInstanceCertificate(true, 0);
+                    haveAppCertificate = await appInstance.CheckApplicationInstanceCertificates(true, 0);
                     if (!haveAppCertificate)
                     {
                         throw new Exception("Application instance certificate invalid!");
@@ -292,7 +292,7 @@ namespace Prediktor.UA.Client
             }
             else
             {
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(endpointURL, useSecurity, operationTimeout);
+                var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, endpointURL, useSecurity, operationTimeout);
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
                 return await Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout, user, null);

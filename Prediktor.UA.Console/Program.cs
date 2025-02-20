@@ -246,7 +246,7 @@ namespace Prediktor.UA.Console
 				System.Console.WriteLine("Certificate Verified?: '{0}'{1}", cert.Verify(), Environment.NewLine);
 				System.Console.WriteLine("Simple Name: '{0}'{1}", cert.GetNameInfo(X509NameType.SimpleName, true), Environment.NewLine);
 				System.Console.WriteLine("Signature Algorithm: '{0}'{1}", cert.SignatureAlgorithm.FriendlyName, Environment.NewLine);
-				System.Console.WriteLine("Public Key: '{0}'{1}", cert.PublicKey.Key.ToXmlString(false), Environment.NewLine);
+				System.Console.WriteLine("Public Key: '{0}'{1}", cert.PublicKey.GetRSAPublicKey().ToXmlString(false), Environment.NewLine);
 				System.Console.WriteLine("Certificate Archived?: '{0}'{1}", cert.Archived, Environment.NewLine);
 				System.Console.WriteLine("Length of Raw Data: '{0}'{1}", cert.RawData.Length, Environment.NewLine);
 
