@@ -1,10 +1,10 @@
 ﻿using Opc.Ua;
 using Prediktor.UA.Client;
 using System;
-using System.IO;
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 namespace Prediktor.UA.Console
 {
 	class Program
@@ -37,7 +37,7 @@ namespace Prediktor.UA.Console
 				System.Console.WriteLine($"Target UA Server: '{server}'\n");
 
 				//var nodeId = new Opc.Ua.NodeId(2267);
-				var nodeId = new Opc.Ua.NodeId(2255); // NamespaceArray
+				var nodeId = new NodeId(2255); // NamespaceArray
 
 				try
 				{
@@ -132,7 +132,7 @@ namespace Prediktor.UA.Console
             //return "opc.tcp://localhost:48010";
         }
 
-        private static void ReadAnonynouslyUnsecure(string server, Opc.Ua.NodeId nodeId)
+        private static void ReadAnonynouslyUnsecure(string server, NodeId nodeId)
 		{
 			var fact = new ApplicationConfigurationFactory();
 			var appConfig = fact.LoadFromFile("uaconfig.xml", false);
@@ -141,31 +141,30 @@ namespace Prediktor.UA.Console
 			{
 				System.Console.WriteLine("\nUnsecure: Reading value (attrib = 13) node: " + nodeId.ToString());
 
-				var nodes = new Opc.Ua.ReadValueIdCollection();
-				nodes.Add(new Opc.Ua.ReadValueId() { NodeId = nodeId, AttributeId = Opc.Ua.Attributes.Value });
-				var response = session.Read(null, double.MaxValue, Opc.Ua.TimestampsToReturn.Both, nodes, 
-					out Opc.Ua.DataValueCollection results, out Opc.Ua.DiagnosticInfoCollection diagnosticInfos);
-				var r = response.ServiceResult;
-				if (Opc.Ua.StatusCode.IsGood(r))
+				var nodes = new ReadValueIdCollection();
+				nodes.Add(new ReadValueId() { NodeId = nodeId, AttributeId = Attributes.Value });
+				var response = session.ReadAsync(null, double.MaxValue, TimestampsToReturn.Both, nodes, CancellationToken.None).Result;
+				var r = response.ResponseHeader.ServiceResult;
+				if (StatusCode.IsGood(r))
 				{
-					if (Opc.Ua.StatusCode.IsGood(results[0].StatusCode))
+					if (StatusCode.IsGood(response.Results[0].StatusCode))
 					{
-						System.Console.WriteLine("Value is: " + results[0].Value);
-						if (results[0].Value is string[] sArr)
+						System.Console.WriteLine("Value is: " + response.Results[0].Value);
+						if (response.Results[0].Value is string[] sArr)
 						{
 							foreach (var s in sArr)
 								System.Console.WriteLine(s);
 						}
 					}
 					else
-						System.Console.WriteLine("Error: " + results[0].StatusCode);
+						System.Console.WriteLine("Error: " + response.Results[0].StatusCode);
 				}
 				else
 					System.Console.WriteLine("Error: " + r);
 			}
 		}
 
-		private static void ReadAnonymouslySecure(string server, Opc.Ua.NodeId nodeId)
+		private static void ReadAnonymouslySecure(string server, NodeId nodeId)
 		{
 			var fact = new ApplicationConfigurationFactory();
 			var appConfig = fact.LoadFromFile("uaconfig.xml", true);
@@ -174,13 +173,14 @@ namespace Prediktor.UA.Console
 			{
 				System.Console.WriteLine($"\nSecure/Anonymous: Reading value (attrib = 13) node: '{nodeId}'\n");
 
-				var nodes = new Opc.Ua.ReadValueIdCollection();
-				nodes.Add(new Opc.Ua.ReadValueId() { NodeId = nodeId, AttributeId = Opc.Ua.Attributes.Value });
-				var response = session.Read(null, double.MaxValue, Opc.Ua.TimestampsToReturn.Both, nodes, out Opc.Ua.DataValueCollection results, out Opc.Ua.DiagnosticInfoCollection diagnosticInfos);
-				var r = response.ServiceResult;
-				if (Opc.Ua.StatusCode.IsGood(r))
+				var nodes = new ReadValueIdCollection();
+				nodes.Add(new ReadValueId() { NodeId = nodeId, AttributeId = Attributes.Value });
+				var response = session.ReadAsync(null, double.MaxValue, TimestampsToReturn.Both, nodes, CancellationToken.None).Result;
+				var r = response.ResponseHeader.ServiceResult;
+				var results = response.Results;
+				if (StatusCode.IsGood(r))
 				{
-					if (Opc.Ua.StatusCode.IsGood(results[0].StatusCode))
+					if (StatusCode.IsGood(results[0].StatusCode))
 					{
 						System.Console.WriteLine("Value is: " + results[0].Value);
 
@@ -199,34 +199,34 @@ namespace Prediktor.UA.Console
 			}
 		}
 
-		private static void ReadUserIdentitySecure(string server, Opc.Ua.NodeId nodeId, string username, string password)
+		private static void ReadUserIdentitySecure(string server, NodeId nodeId, string username, string password)
 		{
 			var fact = new ApplicationConfigurationFactory();
 			var appConfig = fact.LoadFromFile("uaconfig.xml", true);
 			var sessionFactory = new SessionFactory(ValidateCert);
-			var userIdentity = new UserIdentity(username, new System.Net.NetworkCredential(string.Empty, password).Password);
+			var userIdentity = new UserIdentity(username, Encoding.UTF8.GetBytes(new System.Net.NetworkCredential(string.Empty, password).Password));
 			using (var session = sessionFactory.CreateSession(server, "securesession", userIdentity, true, false, appConfig))
 			{
 				System.Console.WriteLine($"\nSecure/UserIdentity: Reading value (attrib = 13) node: '{nodeId}'\n");
 
-				var nodes = new Opc.Ua.ReadValueIdCollection();
-				nodes.Add(new Opc.Ua.ReadValueId() { NodeId = nodeId, AttributeId = Opc.Ua.Attributes.Value });
-				var response = session.Read(null, double.MaxValue, Opc.Ua.TimestampsToReturn.Both, nodes, out Opc.Ua.DataValueCollection results, out Opc.Ua.DiagnosticInfoCollection diagnosticInfos);
-				var r = response.ServiceResult;
-				if (Opc.Ua.StatusCode.IsGood(r))
+				var nodes = new ReadValueIdCollection();
+				nodes.Add(new ReadValueId() { NodeId = nodeId, AttributeId = Attributes.Value });
+				var response = session.ReadAsync(null, double.MaxValue, TimestampsToReturn.Both, nodes, CancellationToken.None).Result;
+				var r = response.ResponseHeader.ServiceResult;
+				if (StatusCode.IsGood(r))
 				{
-					if (Opc.Ua.StatusCode.IsGood(results[0].StatusCode))
+					if (StatusCode.IsGood(response.Results[0].StatusCode))
 					{
-						System.Console.WriteLine("Value is: " + results[0].Value);
+						System.Console.WriteLine("Value is: " + response.Results[0].Value);
 
-						if (results[0].Value is string[] sArr)
+						if (response.Results[0].Value is string[] sArr)
 						{
 							foreach (var s in sArr)
 								System.Console.WriteLine(s);
 						}
 					}
 					else
-						System.Console.WriteLine("Error: " + results[0].StatusCode);
+						System.Console.WriteLine("Error: " + response.Results[0].StatusCode);
 				}
 				else
 					System.Console.WriteLine("Error: " + r);
@@ -259,7 +259,22 @@ namespace Prediktor.UA.Console
 
 			return true;
 		}
+		/// <summary>
+		/// Export a certificate to a PEM format string
+		/// </summary>
+		/// <param name="cert">The certificate to export</param>
+		/// <returns>A PEM encoded string</returns>
+		public static string ExportToDer(X509Certificate cert)
+		{
+			StringBuilder builder = new StringBuilder();
 
+			builder.AppendLine("-----BEGIN CERTIFICATE-----");
+			builder.AppendLine(Convert.ToBase64String(cert.Export(X509ContentType.Cert), Base64FormattingOptions.InsertLineBreaks));
+			builder.AppendLine("-----END CERTIFICATE-----");
+
+			return builder.ToString();
+		}
+#if false
 		private static void StoreCertInTrusted(X509Certificate2 cert)
 		{
 			string filePath = string.Empty;
@@ -281,24 +296,7 @@ namespace Prediktor.UA.Console
 				System.Console.WriteLine(e.ToString());
 			}
 		}
-
-		/// <summary>
-		/// Export a certificate to a PEM format string
-		/// </summary>
-		/// <param name="cert">The certificate to export</param>
-		/// <returns>A PEM encoded string</returns>
-		public static string ExportToDer(X509Certificate cert)
-		{
-			StringBuilder builder = new StringBuilder();
-
-			builder.AppendLine("-----BEGIN CERTIFICATE-----");
-			builder.AppendLine(Convert.ToBase64String(cert.Export(X509ContentType.Cert), Base64FormattingOptions.InsertLineBreaks));
-			builder.AppendLine("-----END CERTIFICATE-----");
-
-			return builder.ToString();
-		}
-
-        private static void ReadHistoryRawDataAnonymouslySecure(string server, Opc.Ua.NodeId nodeId)
+		private static void ReadHistoryRawDataAnonymouslySecure(string server, NodeId nodeId)
         {
             HistoryReadResultCollection results;
             DiagnosticInfoCollection diag;
@@ -311,7 +309,7 @@ namespace Prediktor.UA.Console
                 var read = GetRawDataDetails(DateTime.Now.AddHours(-10), DateTime.Now, 2);
                 var response = session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out results, out diag);
                 var r = response.ServiceResult;
-                if (Opc.Ua.StatusCode.IsGood(r))
+                if (StatusCode.IsGood(r))
                 {
                     if (StatusCode.IsGood(results[0].StatusCode))
                     {
@@ -328,7 +326,7 @@ namespace Prediktor.UA.Console
                         {
                             hrdc = new HistoryReadValueIdCollection(new[] { new HistoryReadValueId() { NodeId = nodeId, ContinuationPoint = contPoints } });
                             session.HistoryRead(null, new ExtensionObject(read), TimestampsToReturn.Source, false, hrdc, out contres, out diag);
-                            if (Opc.Ua.StatusCode.IsGood(contres[0].StatusCode))
+                            if (StatusCode.IsGood(contres[0].StatusCode))
                             {
                                 data = ExtensionObject.ToEncodeable(contres[0].HistoryData) as HistoryData;
                                 if (data != null && data.DataValues != null)
@@ -348,7 +346,7 @@ namespace Prediktor.UA.Console
             }
         }
 
-        private static void ReadHistoryProcessed(string server, Opc.Ua.NodeId[] nodeIds)
+        private static void ReadHistoryProcessed(string server, NodeId[] nodeIds)
         {
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
@@ -383,7 +381,7 @@ namespace Prediktor.UA.Console
             }
         }
 
-        private static void ReadHistoryRaw(string server, Opc.Ua.NodeId[] nodeIds)
+        private static void ReadHistoryRaw(string server, NodeId[] nodeIds)
         {
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
@@ -417,7 +415,7 @@ namespace Prediktor.UA.Console
             }
         }
 
-        private static void ReadHistoryProcessedSecure(string server, Opc.Ua.NodeId[] nodeIds)
+        private static void ReadHistoryProcessedSecure(string server, NodeId[] nodeIds)
         {
             var fact = new ApplicationConfigurationFactory();
             var appConfig = fact.LoadFromFile("uaconfig.xml", true);
@@ -486,15 +484,14 @@ namespace Prediktor.UA.Console
                 //             System.Console.WriteLine("Error: " + r);
             }
         }
-
-        /// <summary>
-        /// Gets HistoryReadDetails for reading raw data.
-        /// </summary>
-        /// <param name="startTime"></param>
-        /// <param name="endTime"></param>
-        /// <param name="numValues"></param>
-        /// <returns></returns>
-        private static HistoryReadDetails GetRawDataDetails(DateTime startTime, DateTime endTime, int numValues)
+		/// <summary>
+		/// Gets HistoryReadDetails for reading raw data.
+		/// </summary>
+		/// <param name="startTime"></param>
+		/// <param name="endTime"></param>
+		/// <param name="numValues"></param>
+		/// <returns></returns>
+		private static HistoryReadDetails GetRawDataDetails(DateTime startTime, DateTime endTime, int numValues)
 		{
 			return new ReadRawModifiedDetails()
 			{
@@ -524,5 +521,6 @@ namespace Prediktor.UA.Console
 				ProcessingInterval = ((double)resampleInterval) * 1000
 			};
 		}
+#endif
 	}
 }

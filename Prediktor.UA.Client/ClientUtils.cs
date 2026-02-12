@@ -36,9 +36,9 @@ namespace Prediktor.UA.Client
 			EndpointDescription selectedEndpoint = null;
 
 			// Connect to the server's discovery endpoint and find the available configuration.
-			using (DiscoveryClient client = DiscoveryClient.Create(uri, configuration))
+			using (DiscoveryClient client = DiscoveryClient.CreateAsync(uri, configuration, ApplicationConfigurationFactory.GetTelemetryContext()).Result)
 			{
-				EndpointDescriptionCollection endpoints = client.GetEndpoints(null);
+				EndpointDescriptionCollection endpoints = client.GetEndpointsAsync(null).Result;
 
 				// select the best endpoint to use based on the selected URL and the UseSecurity checkbox. 
 				for (int ii = 0; ii < endpoints.Count; ii++)
