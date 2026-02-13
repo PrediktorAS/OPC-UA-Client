@@ -32,7 +32,7 @@ branches:
 
   release:
     regex: ^releases?[/-]
-    label: rc
+    label: 'rc'
     increment: Patch
     is-release-branch: true
     track-merge-target: false
