@@ -7,7 +7,7 @@ variables:
 stages:
   #######################################
   ## Build, test and publish dotnet
-  ##
+  ## 
   - stage: DotnetStage
     displayName: Build, test and publish dotnet
     jobs:
