@@ -16,3 +16,37 @@ ignore:
   sha: []
 merge-message-formats: {}
 update-build-number: true
+
+branches:
+  main:
+    regex: ^main$
+    tag: ''
+    increment: Patch
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+
+  develop:
+    regex: ^dev(elop)?$
+    tag: 'beta'
+    increment: Minor
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+
+  release:
+    regex: ^releases?[/-]
+    tag: rc
+    increment: Patch
+    is-release-branch: true
+    prevent-increment-of-merged-branch-version: true
+    track-merge-target: false
+
+  feature:
+    regex: ^features?/
+    tag: 'ci'
+    increment: Inherit
+    track-merge-target: false
+
+  pull-request:
+    tag: 'pr'
+    increment: Inherit
+    track-merge-target: false
