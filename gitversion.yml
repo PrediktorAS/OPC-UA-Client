@@ -22,14 +22,14 @@ branches:
     regex: ^main$
     label: ''
     increment: Patch
-    prevent-increment-of-merged-branch-version: true
+    preventIncrementOfMergedBranchVersion: true
     track-merge-target: false
 
   develop:
     regex: ^dev(elop)?$
     label: 'beta'
     increment: Minor
-    prevent-increment-of-merged-branch-version: true
+    preventIncrementOfMergedBranchVersion: true
     track-merge-target: false
 
   release:
@@ -37,7 +37,7 @@ branches:
     label: rc
     increment: Patch
     is-release-branch: true
-    prevent-increment-of-merged-branch-version: true
+    preventIncrementOfMergedBranchVersion: true
     track-merge-target: false
 
   feature:
