@@ -4,6 +4,7 @@ using Opc.Ua.Configuration;
 using Prediktor.Log;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,7 +14,7 @@ namespace Prediktor.UA.Client
 	{
         private Func<System.Security.Cryptography.X509Certificates.X509Certificate2, bool> _validateCertificate;
         private static readonly ITraceLog _log = LogManager.GetLogger(typeof(SessionFactory));
-
+        private Opc.Ua.Client.ISessionFactory _foundationSessionFactory;
         public const int DefaultReverseConnectWaitTimeout = 20000;
         // This method is copied from opcfoundation ua client. The only difference is this version is specifying
         // ReverseConnectStrategy.AnyOnce, in order to accept any serverapplicationuri, serverendpointuri
@@ -80,6 +81,7 @@ namespace Prediktor.UA.Client
         public SessionFactory(Func<System.Security.Cryptography.X509Certificates.X509Certificate2, bool> validateCertificate)
         {
             _validateCertificate = validateCertificate;
+            _foundationSessionFactory = new DefaultSessionFactory(ApplicationConfigurationFactory.GetTelemetryContext());
         }
 
 
@@ -91,32 +93,32 @@ namespace Prediktor.UA.Client
         /// </summary>
         /// <param name="endpointURL"></param>
         /// <param name="useSecurity">If true, </param>
-        public Session CreateAnonymously(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
+        public ISession CreateAnonymously(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
         {
             return CreateSession(endpointURL, sessionName, new UserIdentity(new AnonymousIdentityToken()), useSecurity, reverseConnect, applicationConfig);
         }
 
-		public Session CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
+		public ISession CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
         {
             return CreateSession(endpointURL, sessionName, user, useSecurity, 15000, 60000, reverseConnect, applicationConfig);
         }
 
-        public Session CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig)
+        public ISession CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig)
 		{
             bool haveAppCertificate = false;
             if (useSecurity)
             {
-                var appInstance = new ApplicationInstance(applicationConfig);
+                var appInstance = new ApplicationInstance(applicationConfig, ApplicationConfigurationFactory.GetTelemetryContext());
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificates(true, 0).Result;
+                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificatesAsync(true, 0).Result;
                     if (!haveAppCertificate)
                     {
                         throw new Exception("Application instance certificates invalid!");
                     }
                 }
-                applicationConfig.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate);
+                applicationConfig.ApplicationUri = X509Utils.GetApplicationUrisFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate).Single();
             }
             var autoAccept = false;
             if (applicationConfig.SecurityConfiguration.AutoAcceptUntrustedCertificates)
@@ -131,11 +133,31 @@ namespace Prediktor.UA.Client
 			{
                 ITransportWaitingConnection connection = null;
                 ConfiguredEndpoint endpoint;
-                using (var reverseManager = new ReverseConnectManager())
+                using (var reverseManager = new ReverseConnectManager(ApplicationConfigurationFactory.GetTelemetryContext()))
                 {
                     reverseManager.AddEndpoint(new Uri(endpointURL));
                     reverseManager.StartService(applicationConfig);
-                    Task<ITransportWaitingConnection> connectionTask;
+					var selectedEndpoint = CoreClientUtils.SelectEndpointAsync(applicationConfig, connection, haveAppCertificate && useSecurity, operationTimeout, ApplicationConfigurationFactory.GetTelemetryContext()).Result;
+					endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
+
+                    try
+                    {
+                        return _foundationSessionFactory.CreateAsync(applicationConfig,
+                            reverseManager,
+                            endpoint,
+                            false,
+                            false,
+                            "NSS",
+                            sessionTimeout,
+                            user,
+                            new List<string>()).Result;
+                    }
+					catch (Exception e)
+					{
+						_log.Error($"Unable to establish a reverse connection against endpoint {endpointURL}", e);
+					}
+					/*
+					Task<ITransportWaitingConnection> connectionTask;
                     try
                     {
                         connectionTask = GetReverseConnection(applicationConfig, reverseManager, endpointURL);
@@ -152,53 +174,54 @@ namespace Prediktor.UA.Client
                         throw new Exception($"Unable to establish a reverse connection against endpoint {endpointURL}");
                     }
 
-                    var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, connection, haveAppCertificate && useSecurity, operationTimeout);
+                    var selectedEndpoint = CoreClientUtils.SelectEndpointAsync(applicationConfig, connection, haveAppCertificate && useSecurity, operationTimeout, ApplicationConfigurationFactory.GetTelemetryContext()).Result;
                     endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
                     // Must establish new connection after endpoint is selected
                     connectionTask = GetReverseConnection(applicationConfig, reverseManager, endpointURL);
                     connectionTask.Wait();
                     if (connectionTask.IsCompleted)
                         connection = connectionTask.Result;
-                }
-                _log.DebugFormat("Creating session for reverse connection endpoint {0}", endpoint.ToString());
+                    */
+				}
+				_log.DebugFormat("Creating session for reverse connection endpoint {0}", endpoint.ToString());
 
-                return Session.Create(
+                return _foundationSessionFactory.CreateAsync(
                     applicationConfig,
-                    connection,
+                    (ReverseConnectManager)null,
                     endpoint,
                     false,
                     false,
                     "NSS",
                     sessionTimeout,
                     user,
-                    Array.Empty<string>()).Result;
+                    new List<string>()).Result;
             }
             else
 			{
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, endpointURL, useSecurity, operationTimeout);
+                var selectedEndpoint = CoreClientUtils.SelectEndpointAsync(applicationConfig, endpointURL, useSecurity, operationTimeout, ApplicationConfigurationFactory.GetTelemetryContext()).Result;
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-                return Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout,
+                return _foundationSessionFactory.CreateAsync(applicationConfig, endpoint, false, sessionName, sessionTimeout,
                     user, null).Result;
             }
         }
 
-        public Session CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig)
+        public ISession CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig)
         {
             bool haveAppCertificate = false;
             if (useSecurity)
             {
-                var appInstance = new ApplicationInstance(applicationConfig);
+                var appInstance = new ApplicationInstance(applicationConfig, ApplicationConfigurationFactory.GetTelemetryContext());
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificates(true, 0).Result;
+                    haveAppCertificate = appInstance.CheckApplicationInstanceCertificatesAsync(true, 0).Result;
                     if (!haveAppCertificate)
                     {
                         throw new Exception("Application instance certificate invalid!");
                     }
                 }
-                applicationConfig.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate);
+                applicationConfig.ApplicationUri = X509Utils.GetApplicationUrisFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate).Single();
             }
             var autoAccept = false;
             if (applicationConfig.SecurityConfiguration.AutoAcceptUntrustedCertificates)
@@ -211,37 +234,37 @@ namespace Prediktor.UA.Client
             var endpointConfiguration = EndpointConfiguration.Create(applicationConfig);
             var endpoint = new ConfiguredEndpoint(null, endpointDescription, endpointConfiguration);
 
-            return Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout,
+            return _foundationSessionFactory.CreateAsync(applicationConfig, endpoint, false, sessionName, sessionTimeout,
                 user, null).Result;
         }
 
 
-        public async Task<Session> CreateAnonymouslyAsync(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
+        public async Task<ISession> CreateAnonymouslyAsync(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
         {
             return await CreateSessionAsync(endpointURL, sessionName, new UserIdentity(new AnonymousIdentityToken()), useSecurity,reverseConnect, applicationConfig);
         }
 
-        public async Task<Session> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
+        public async Task<ISession> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig)
 		{
             return await CreateSessionAsync(endpointURL, sessionName, user, useSecurity, 15000, 60000, reverseConnect, applicationConfig);
         }
 
-        public async Task<Session> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig)
+        public async Task<ISession> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig)
 		{
             bool haveAppCertificate = false;
             if (useSecurity)
             {
-                var appInstance = new ApplicationInstance(applicationConfig);
+                var appInstance = new ApplicationInstance(applicationConfig, ApplicationConfigurationFactory.GetTelemetryContext());
                 var checkCertificate = true;
                 if (checkCertificate)
                 {
-                    haveAppCertificate = await appInstance.CheckApplicationInstanceCertificates(true, 0);
+                    haveAppCertificate = await appInstance.CheckApplicationInstanceCertificatesAsync(true, 0);
                     if (!haveAppCertificate)
                     {
                         throw new Exception("Application instance certificate invalid!");
                     }
                 }
-                applicationConfig.ApplicationUri = X509Utils.GetApplicationUriFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate);
+                applicationConfig.ApplicationUri = X509Utils.GetApplicationUrisFromCertificate(applicationConfig.SecurityConfiguration.ApplicationCertificate.Certificate).Single();
             }
             var autoAccept = false;
             if (applicationConfig.SecurityConfiguration.AutoAcceptUntrustedCertificates)
@@ -255,7 +278,7 @@ namespace Prediktor.UA.Client
             {
                 ITransportWaitingConnection connection = null;
                 ConfiguredEndpoint endpoint;
-                using (var reverseManager = new ReverseConnectManager())
+                using (var reverseManager = new ReverseConnectManager(ApplicationConfigurationFactory.GetTelemetryContext()))
                 {
                     reverseManager.AddEndpoint(new Uri(endpointURL));
                     reverseManager.StartService(applicationConfig);
@@ -272,14 +295,14 @@ namespace Prediktor.UA.Client
                     {
                         throw new Exception($"Unable to establish a reverse connection against endpoint {endpointURL}");
                     }
-                    var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, connection, haveAppCertificate && useSecurity, operationTimeout);
+                    var selectedEndpoint = CoreClientUtils.SelectEndpointAsync(applicationConfig, connection, haveAppCertificate && useSecurity, operationTimeout, ApplicationConfigurationFactory.GetTelemetryContext()).Result;
                     endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
                     // Must establish new connection after endpoint is selected
                     connection = await GetReverseConnection(applicationConfig, reverseManager, endpointURL);
                 }
 
                 _log.DebugFormat("Creating session for reverse connection endpoint {0}", endpointURL);
-                return await Session.Create(
+                return await _foundationSessionFactory.CreateAsync(
                     applicationConfig,
                     connection,
                     endpoint,
@@ -292,10 +315,10 @@ namespace Prediktor.UA.Client
             }
             else
             {
-                var selectedEndpoint = CoreClientUtils.SelectEndpoint(applicationConfig, endpointURL, useSecurity, operationTimeout);
+                var selectedEndpoint = CoreClientUtils.SelectEndpointAsync(applicationConfig, endpointURL, useSecurity, operationTimeout, ApplicationConfigurationFactory.GetTelemetryContext()).Result;
                 var endpoint = new ConfiguredEndpoint(null, selectedEndpoint, endpointConfiguration);
 
-                return await Session.Create(applicationConfig, endpoint, false, sessionName, sessionTimeout, user, null);
+                return await _foundationSessionFactory.CreateAsync(applicationConfig, endpoint, false, sessionName, sessionTimeout, user, null);
             }
         }
 

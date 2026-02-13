@@ -44,12 +44,12 @@
       <Project>{954aa52b-1c98-4bc4-9b65-3b6a557f3597}</Project>
       <Name>Prediktor.UA.Client</Name>
     </ProjectReference>
-	<PackageReference Include="GitVersion.MsBuild" Version="5.12.0">
+	<PackageReference Include="GitVersion.MsBuild" Version="6.5.1">
 		<PrivateAssets>all</PrivateAssets>
 		<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	</PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.377.21" />
+    <PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.106" />
   </ItemGroup>
 </Project>

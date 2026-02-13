@@ -23,7 +23,7 @@ namespace Prediktor.UA.Client
         /// Ie. wether the endpoint defines a client uri the server should try to connect to, or wether the endpoint 
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
-        Session CreateAnonymously(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        ISession CreateAnonymously(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
         /// <summary>
         /// Connects to endPointUrl.
@@ -48,7 +48,7 @@ namespace Prediktor.UA.Client
         /// Ie. wether the endpoint defines a client uri the server should try to connect to, or wether the endpoint 
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
-        Session CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        ISession CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace Prediktor.UA.Client
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
 
-        Session CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        ISession CreateSession(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
         /// <summary>
         /// Creates a session without user identity.
@@ -90,7 +90,7 @@ namespace Prediktor.UA.Client
         /// Ie. wether the endpoint defines a client uri the server should try to connect to, or wether the endpoint 
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
-        Task<Session> CreateAnonymouslyAsync(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        Task<ISession> CreateAnonymouslyAsync(string endpointURL, string sessionName, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
         /// <summary>
         /// Connects to endPointUrl.
@@ -115,7 +115,7 @@ namespace Prediktor.UA.Client
         /// Ie. wether the endpoint defines a client uri the server should try to connect to, or wether the endpoint 
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
-        Task<Session> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        Task<ISession> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
 
         /// <summary>
@@ -144,7 +144,7 @@ namespace Prediktor.UA.Client
         /// defines an endpoint on the server that the client should attempt to connect to</param>
         /// <returns>A session object if successful, or null if the method fails</returns>
 
-        Task<Session> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig);
+        Task<ISession> CreateSessionAsync(string endpointURL, string sessionName, IUserIdentity user, bool useSecurity, int operationTimeout, uint sessionTimeout, bool reverseConnect, ApplicationConfiguration applicationConfig);
 
         /// <summary>
         /// Connects to endpointDescription.
@@ -164,6 +164,6 @@ namespace Prediktor.UA.Client
         /// <param name="sessionTimeout"></param>
         /// <param name="applicationConfig"></param>
         /// <returns></returns>
-        Session CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig);
+        ISession CreateSession(EndpointDescription endpointDescription, string sessionName, IUserIdentity user, bool useSecurity, uint sessionTimeout, ApplicationConfiguration applicationConfig);
     }
 }
