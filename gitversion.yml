@@ -8,7 +8,7 @@ ignore:
 branches:
   main:
     regex: ^main$
-    tag: ''
+    label: ''
     increment: Minor
     preventIncrementOfMergedBranchVersion: true
     trackMergeTarget: false
@@ -16,20 +16,20 @@ branches:
     isReleaseBranch: true
   develop:
     regex: ^develop$
-    tag: 'dev'
+    label: 'dev'
     increment: Minor
   feature:
     regex: ^feature(s)?/.+
-    tag: 'alpha'
+    label: 'alpha'
     increment: Minor
   release:
     regex: ^release(s)?/.+
-    tag: 'rc'
+    label: 'rc'
     increment: Patch
   hotfix:
     regex: ^hotfix(es)?/.+
-    tag: 'beta'
+    label: 'beta'
     increment: Patch
   pull-request:
-    tag: 'pr'
+    label: 'pr'
     increment: Inherit
