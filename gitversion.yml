@@ -9,7 +9,7 @@ branches:
   main:
     regex: ^main$
     label: ''
-    increment: Minor
+    increment: Patch
   develop:
     regex: ^develop$
     label: 'dev'

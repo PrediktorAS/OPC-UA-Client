@@ -36,9 +36,9 @@ steps:
     displayName: 'Export GitVersion variables'
 
   - script: |
-      echo "GitVersion.FullSemVer: $(GitVersion.FullSemVer)"
-      echo "GitVersion.NuGetVersion: $(GitVersion.NuGetVersion)"
-      echo "GitVersion.MajorMinorPatch: $(GitVersion.MajorMinorPatch)"
+      echo "GitVersion.FullSemVer: ${GitVersion_FullSemVer}"
+      echo "GitVersion.NuGetVersion: ${GitVersion_NuGetVersion}"
+      echo "GitVersion.MajorMinorPatch: ${GitVersion_MajorMinorPatch}"
     displayName: 'Print GitVersion and NuGetVersion'
 
   - task: NuGetToolInstaller@1
@@ -80,7 +80,7 @@ steps:
       command: 'push'
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'external'
-      publishFeedCredentials: 'Pred_nuget_03032023'
+      apiKey: 'Pred_nuget_03032023'
       arguments: '--skip-duplicate'
 
   - script: |
