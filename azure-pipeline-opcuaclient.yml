@@ -71,7 +71,10 @@ steps:
       configuration: $(BuildConfiguration)
       arguments: '--no-build /p:PackageVersion=$(GitVersion.NuGetVersion)'
       packagesToPack: 'Prediktor.UA.Client/Prediktor.UA.Client.csproj'
-      outputDir: '$(Build.ArtifactStagingDirectory)'
+      outputDir: '$(Build.ArtifactStagingDirectory)/packages/releases'
+
+  - publish: '$(Build.ArtifactStagingDirectory)/packages'
+    artifact: 'packages'
 
   - script: |
       for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
