@@ -3,7 +3,7 @@ tag-prefix: '[vV]?'
 assembly-versioning-scheme: MajorMinorPatch
 assembly-file-versioning-scheme: MajorMinorPatch
 assembly-informational-format: '{InformationalVersion}'
-mode: ContinuousDelivery
+mode: Mainline
 commit-date-format: yyyy-MM-dd
 increment: Inherit
 major-version-bump-message: '\+semver:\s?(breaking|major)'
@@ -20,7 +20,7 @@ update-build-number: true
 branches:
   main:
     regex: ^main$
-    label: 'release'
+    label: ''
     increment: Patch
     track-merge-target: false
 
