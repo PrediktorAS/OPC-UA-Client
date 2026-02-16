@@ -80,7 +80,7 @@ steps:
       command: 'push'
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'external'
-      apiKey: 'Pred_nuget_03032023'
+      apiKey: $(NUGET-PUBLISH-KEY)
       arguments: '--skip-duplicate'
 
   - script: |
