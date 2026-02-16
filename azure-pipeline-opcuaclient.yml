@@ -23,14 +23,22 @@ steps:
   - script: |
      dotnet tool install --global GitVersion.Tool --version 6.5.1
      export PATH="$PATH:$HOME/.dotnet/tools"
-     dotnet-gitversion -output buildserver -config gitversion.yml
+     dotnet-gitversion -output json -config gitversion.yml > gitversion.json
     displayName: 'Install and Run GitVersion 6.5.1'
 
   - script: |
       echo "GitVersion.FullSemVer: $(GitVersion.FullSemVer)"
-      echo "GitVersion.NuGetVersion: $(GitVersion.NuGetVersion)"
       echo "GitVersion.MajorMinorPatch: $(GitVersion.MajorMinorPatch)"
     displayName: 'Print GitVersion and NuGetVersion'
+
+  - script: |
+      NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
+      FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
+      MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
+      echo "##vso[task.setvariable variable=GitVersion.NuGetVersion]$NUGET_VERSION"
+      echo "##vso[task.setvariable variable=GitVersion.FullSemVer]$FULL_SEMVER"
+      echo "##vso[task.setvariable variable=GitVersion.MajorMinorPatch]$MAJOR_MINOR_PATCH"
+    displayName: 'Export GitVersion variables'
 
   - task: NuGetToolInstaller@1
     displayName: 'Install NuGet tool'
@@ -39,9 +47,7 @@ steps:
     displayName: 'Restore NuGet packages'
     inputs:
       command: 'restore'
-      restoreSolution: '**/*.sln'
-      feedsToUse: 'config'
-      externalFeedCredentials: 'Pred_nuget_03032023'
+      projects: '**/*.sln'
 
   - task: DotNetCoreCLI@2
     displayName: 'Build solution'
