@@ -43,7 +43,7 @@ steps:
   - task: NuGetToolInstaller@1
     displayName: 'Install NuGet tool'
 
-  - task: NuGetCommand@2
+  - task: DotNetCoreCLI@2
     displayName: 'Restore NuGet packages'
     inputs:
       command: 'restore'
