@@ -18,7 +18,7 @@ steps:
       version: '10.0.x'
       installationPath: $(Agent.ToolsDirectory)/dotnet
 
-  - task: GitVersion@5
+  - task: GitVersion@6
     displayName: 'Run GitVersion'
     inputs:
       useConfigFile: true
