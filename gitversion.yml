@@ -20,7 +20,7 @@ update-build-number: true
 branches:
   main:
     regex: ^main$
-    label: ''
+    label: 'release'
     increment: Patch
     track-merge-target: false
 
