@@ -10,7 +10,6 @@ branches:
     regex: ^main$
     label: ''
     increment: Minor
-    tracksReleaseBranches: false
     isReleaseBranch: true
   develop:
     regex: ^develop$
