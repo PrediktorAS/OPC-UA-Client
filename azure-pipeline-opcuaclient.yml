@@ -81,7 +81,7 @@ steps:
       packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
       nuGetFeedType: 'external'
       apiKey: $(NUGET-PUBLISH-KEY)
-      arguments: '--skip-duplicate'
+      arguments: '--skip-duplicate --source https://api.nuget.org/v3/index.json'
 
   - script: |
       git config --global user.email "rd_relmgr@prediktor.no"
