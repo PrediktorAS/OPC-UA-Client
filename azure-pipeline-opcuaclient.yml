@@ -47,11 +47,12 @@ steps:
       configuration: $(BuildConfiguration)
       arguments: '--no-restore'
 
-  - task: DotNetTest@2
+  - task: DotNetCoreCLI@2
     displayName: 'Run tests'
     inputs:
-      configuration: $(BuildConfiguration)
-      arguments: '--no-build'
+      command: 'test'
+      projects: '**/*.sln'
+      arguments: '--configuration $(BuildConfiguration) --no-build'
 
   - task: DotNetCoreCLI@2
     displayName: 'Pack NuGet'
