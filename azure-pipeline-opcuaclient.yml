@@ -1,4 +1,3 @@
-
 variables:
   buildConfiguration: 'Release'
   isMain: $[eq(variables['Build.SourceBranch'], 'refs/heads/main')]
@@ -57,13 +56,13 @@ stages:
       - script: |
           # Strip numeric-only pre-release tag for main branch
           if [[ "$(Build.SourceBranch)" == "refs/heads/main" ]]; then
-              export NUGET_VERSION=$(echo $(GitVersion.FullSemVer) | sed -E 's/-[0-9]+$//')
-              echo "##vso[task.setvariable variable=NUGET_VERSION]$NUGET_VERSION"
+              NUGET_VERSION=$(echo $(GitVersion.FullSemVer) | sed -E 's/-[0-9]+$//')
           else
-              export NUGET_VERSION=$(GitVersion.FullSemVer)
-              echo "##vso[task.setvariable variable=NUGET_VERSION;isOutput=true]$NUGET_VERSION"
+              NUGET_VERSION=$(GitVersion.FullSemVer)
           fi
+          echo "##vso[task.setvariable variable=NUGET_VERSION;isOutput=true]$NUGET_VERSION"
         displayName: 'Sanitize NuGet version for main branch'
+        name: SetNugetVersion
 
       - task: DotNetCoreCLI@2
         inputs:
@@ -100,7 +99,7 @@ stages:
 
     - deployment:
       variables:
-        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['DotnetBuild.NUGET_VERSION'] ]
+        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['SetNugetVersion.NUGET_VERSION'] ]
       pool:
         vmImage: 'ubuntu-22.04'
       environment: 'nuget'
