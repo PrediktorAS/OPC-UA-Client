@@ -41,8 +41,9 @@ stages:
       - task: gitversion/setup@0
         displayName: 'Setup GitVersion'
         inputs:
-          versionSpec: '=6.0.0'
-      
+          versionSpec: '6.0.x'
+          preferLatestVersion: true
+
       - task: gitversion/execute@0
         displayName: 'Execute GitVersion'
         name: Version
