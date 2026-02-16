@@ -69,7 +69,7 @@ steps:
       command: 'pack'
       configuration: $(BuildConfiguration)
       arguments: '--no-build /p:PackageVersion=$(GitVersion.NuGetVersion)'
-      packagesToPack: '**/*.csproj'
+      packagesToPack: 'Prediktor.UA.Client/Prediktor.UA.Client.csproj'
       outputDir: '$(Build.ArtifactStagingDirectory)'
 
   - task: DotNetCoreCLI@2
