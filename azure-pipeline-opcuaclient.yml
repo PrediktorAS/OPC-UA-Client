@@ -21,7 +21,7 @@ steps:
   - script: |
      dotnet tool install --global GitVersion.Tool --version 6.5.1
      export PATH="$PATH:$HOME/.dotnet/tools"
-     GitVersion -output buildserver -config gitversion.yml
+     dotnet-gitversion -output buildserver -config gitversion.yml
     displayName: 'Install and Run GitVersion 6.5.1'
 
   - script: |
