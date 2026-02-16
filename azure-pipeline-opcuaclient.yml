@@ -73,16 +73,17 @@ steps:
       packagesToPack: 'Prediktor.UA.Client/Prediktor.UA.Client.csproj'
       outputDir: '$(Build.ArtifactStagingDirectory)'
 
-  - task: DotNetCoreCLI@2
-    displayName: 'Push NuGet'
-    inputs:
-      command: 'custom'
-      custom: 'nuget'
-      arguments: >
-        push $(Build.ArtifactStagingDirectory)/**/*.nupkg
-        --api-key $(NUGET_PUBLISH_KEY)
-        --source https://api.nuget.org/v3/index.json
-        --skip-duplicate
+  - script: |
+      for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
+        if [[ "$file" != *.symbols.nupkg ]]; then
+          echo "Pushing $file"
+          dotnet nuget push "$file" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key $(NUGET-PUBLISH-KEY) \
+            --skip-duplicate
+        fi
+      done
+    displayName: 'Push NuGet Package'
 
   - script: |
       git config --global user.email "rd_relmgr@prediktor.no"
