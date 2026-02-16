@@ -78,7 +78,7 @@ steps:
     condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
     inputs:
       command: 'push'
-      packagesToPush: '$(Build.ArtifactStagingDirectory)/*.nupkg'
+      packagesToPush: '$(Build.ArtifactStagingDirectory)/**/*.nupkg'
       nuGetFeedType: 'external'
       apiKey: $(NUGET-PUBLISH-KEY)
       arguments: '--skip-duplicate --source https://api.nuget.org/v3/index.json'
