@@ -18,12 +18,11 @@ steps:
       version: '10.0.x'
       installationPath: $(Agent.ToolsDirectory)/dotnet
 
-  - task: GitVersion@5
-    displayName: 'Run GitVersion'
-    inputs:
-      useConfigFile: true
-      configFilePath: gitversion.yml
-      versionSpec: '6.5.1'
+  - script: |
+     dotnet tool install --global GitVersion.Tool --version 6.5.1
+     export PATH="$PATH:$HOME/.dotnet/tools"
+     GitVersion -output buildserver -config gitversion.yml
+    displayName: 'Install and Run GitVersion 6.5.1'
 
   - script: |
       echo "GitVersion.FullSemVer: $(GitVersion.FullSemVer)"
