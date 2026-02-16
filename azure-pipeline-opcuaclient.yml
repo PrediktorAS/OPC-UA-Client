@@ -27,7 +27,7 @@ steps:
     displayName: 'Install and Run GitVersion 6.5.1'
 
   - script: |
-      NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
+      NUGET_VERSION=$(jq -r .NuGetPackageVersion gitversion.json)
       FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
       MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
       echo "##vso[task.setvariable variable=GitVersion.NuGetVersion]$NUGET_VERSION"
