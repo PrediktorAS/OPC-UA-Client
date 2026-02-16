@@ -1,69 +1,31 @@
-mode: MainLine
-major-version-bump-message: '\+semver:\s?(breaking|major)'
-minor-version-bump-message: '\+semver:\s?(feature|minor)'
-patch-version-bump-message: '\+semver:\s?(fix|patch)'
-no-bump-message: '\+semver:\s?none'
-tag-prefix: '[vV]?'
-version-in-branch-pattern: (?<version>[vV]?\d+\.\d+\.\d+).*
-semantic-version-format: Strict
-
-branches:
-  main:
-    mode: MainLine
-    tag: ''
-    increment: Patch
-    prevent-increment:
-      when-current-commit-tagged: true
-    track-merge-target: false
-    regex: ^main$
-    source-branches: []
-    is-mainline: true
-
-  develop:
-    mode: ContinuousDeployment
-    tag: 'alpha'
-    increment: Minor
-    prevent-increment:
-      when-branch-merged: false
-    track-merge-target: true
-    regex: ^dev(elop)?(ment)?$
-    source-branches: []
-    is-mainline: false
-
-  feature:
-    mode: ContinuousDeployment
-    tag: 'alpha.{BranchName}'
-    increment: Inherit
-    prevent-increment:
-      when-branch-merged: false
-    track-merge-target: false
-    regex: ^features?[/-](?<BranchName>.+)
-    source-branches: ['develop']
-    is-mainline: false
-
-  release:
-    mode: ContinuousDeployment
-    tag: 'beta'
-    increment: None
-    prevent-increment:
-      when-current-commit-tagged: true
-    track-merge-target: false
-    regex: ^releases?[/-](?<BranchName>.+)
-    source-branches: ['develop', 'main']
-    is-mainline: false
-
-  hotfix:
-    mode: ContinuousDeployment
-    tag: 'beta'
-    increment: Patch
-    prevent-increment:
-      when-current-commit-tagged: false
-    track-merge-target: false
-    regex: ^hotfix(es)?[/-](?<BranchName>.+)
-    source-branches: ['main']
-    is-mainline: false
-
+mode: ContinuousDeployment
+assembly-versioning-scheme: MajorMinorPatch
+assembly-file-versioning-scheme: MajorMinorPatch
+assembly-informational-format: '{InformationalVersion}'
+commit-message-incrementing: Enabled
 ignore:
   sha: []
-
-merge-message-formats: {}
+branches:
+  main:
+    regex: ^main$
+    label: ''
+    increment: Minor
+  develop:
+    regex: ^develop$
+    label: 'dev'
+    increment: Minor
+  feature:
+    regex: ^feature(s)?/.+
+    label: 'alpha'
+    increment: Minor
+  release:
+    regex: ^release(s)?/.+
+    label: 'rc'
+    increment: Patch
+  hotfix:
+    regex: ^hotfix(es)?/.+
+    label: 'beta'
+    increment: Patch
+  pull-request:
+    label: 'pr'
+    increment: Inherit
