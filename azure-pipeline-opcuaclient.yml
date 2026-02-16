@@ -23,6 +23,8 @@ steps:
     inputs:
       useConfigFile: true
       configFilePath: gitversion.yml
+      versionSpec: '6.5.1'
+      preferLatestVersion: true
 
   - script: |
       echo "GitVersion.FullSemVer: $(GitVersion.FullSemVer)"
