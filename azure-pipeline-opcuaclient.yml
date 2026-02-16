@@ -18,13 +18,12 @@ steps:
       version: '10.0.x'
       installationPath: $(Agent.ToolsDirectory)/dotnet
 
-  - task: GitVersion@6
+  - task: GitVersion@5
     displayName: 'Run GitVersion'
     inputs:
       useConfigFile: true
       configFilePath: gitversion.yml
       versionSpec: '6.5.1'
-      preferLatestVersion: true
 
   - script: |
       echo "GitVersion.FullSemVer: $(GitVersion.FullSemVer)"
