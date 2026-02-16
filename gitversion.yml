@@ -1,49 +1,35 @@
-next-version: 1.0.0
-tag-prefix: '[vV]?'
+mode: ContinuousDeployment
 assembly-versioning-scheme: MajorMinorPatch
 assembly-file-versioning-scheme: MajorMinorPatch
 assembly-informational-format: '{InformationalVersion}'
-mode: ContinuousDelivery
-commit-date-format: yyyy-MM-dd
-increment: Inherit
-major-version-bump-message: '\+semver:\s?(breaking|major)'
-minor-version-bump-message: '\+semver:\s?(feature|minor)'
-patch-version-bump-message: '\+semver:\s?(fix|patch)'
-no-bump-message: '\+semver:\s?(none|skip)'
-tag-pre-release-weight: 60000
 commit-message-incrementing: Enabled
 ignore:
   sha: []
-merge-message-formats: {}
-update-build-number: true
-
 branches:
   main:
     regex: ^main$
-    label: ''
-    increment: Patch
-    track-merge-target: false
-
-  develop:
-    regex: ^dev(elop)?$
-    label: 'beta'
+    tag: ''
     increment: Minor
-    track-merge-target: false
-
-  release:
-    regex: ^releases?[/-]
-    label: 'rc'
-    increment: Patch
-    is-release-branch: true
-    track-merge-target: false
-
+    preventIncrementOfMergedBranchVersion: true
+    trackMergeTarget: false
+    tracksReleaseBranches: false
+    isReleaseBranch: true
+  develop:
+    regex: ^develop$
+    tag: 'dev'
+    increment: Minor
   feature:
-    regex: ^features?/
-    label: 'ci'
-    increment: Inherit
-    track-merge-target: false
-
+    regex: ^feature(s)?/.+
+    tag: 'alpha'
+    increment: Minor
+  release:
+    regex: ^release(s)?/.+
+    tag: 'rc'
+    increment: Patch
+  hotfix:
+    regex: ^hotfix(es)?/.+
+    tag: 'beta'
+    increment: Patch
   pull-request:
-    label: 'pr'
+    tag: 'pr'
     increment: Inherit
-    track-merge-target: false
