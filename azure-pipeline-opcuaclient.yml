@@ -54,6 +54,17 @@ stages:
       - script: echo current version is $(GitVersion.MajorMinorPatch)
         displayName: 'Print version'
 
+      - script: |
+          # Strip numeric-only pre-release tag for main branch
+          if [[ "$(Build.SourceBranch)" == "refs/heads/main" ]]; then
+              export NUGET_VERSION=$(echo $(GitVersion.FullSemVer) | sed -E 's/-[0-9]+$//')
+              echo "##vso[task.setvariable variable=NUGET_VERSION]$NUGET_VERSION"
+          else
+              export NUGET_VERSION=$(GitVersion.FullSemVer)
+              echo "##vso[task.setvariable variable=NUGET_VERSION;isOutput=true]$NUGET_VERSION"
+          fi
+          displayName: 'Sanitize NuGet version for main branch'
+
       - task: DotNetCoreCLI@2
         inputs:
           command: 'build'
@@ -71,7 +82,7 @@ stages:
           nobuild: true
           includesymbols: true
           versioningScheme: 'byEnvVar'
-          versionEnvVar: 'GitVersion.MajorMinorPatch'
+          versionEnvVar: 'NUGET_VERSION'
 
       - publish: '$(Build.ArtifactStagingDirectory)/packages'
         artifact: 'packages'
@@ -89,7 +100,7 @@ stages:
 
     - deployment:
       variables:
-        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['Version.GitVersion.MajorMinorPatch'] ]
+        Ver.NugetVersion: $[ stageDependencies.DotnetStage.DotnetBuild.outputs['DotnetBuild.NUGET_VERSION'] ]
       pool:
         vmImage: 'ubuntu-22.04'
       environment: 'nuget'

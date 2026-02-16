@@ -3,7 +3,7 @@ tag-prefix: '[vV]?'
 assembly-versioning-scheme: MajorMinorPatch
 assembly-file-versioning-scheme: MajorMinorPatch
 assembly-informational-format: '{InformationalVersion}'
-mode: Mainline
+mode: ContinuousDelivery
 commit-date-format: yyyy-MM-dd
 increment: Inherit
 major-version-bump-message: '\+semver:\s?(breaking|major)'
