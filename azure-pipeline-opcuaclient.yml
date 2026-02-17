@@ -23,9 +23,17 @@ steps:
       version: 10.0.x
 
   - script: |
+      set -euo pipefail
+      cd "$(Build.SourcesDirectory)"
+
       dotnet tool install --global GitVersion.Tool --version 6.5.1
       export PATH="$PATH:$HOME/.dotnet/tools"
-      dotnet-gitversion -output json -config gitversion.yml > gitversion.json
+
+      # Write JSON to both stdout (for logs) AND a file
+      dotnet-gitversion -output json -config gitversion.yml | tee gitversion.json
+
+      # Quick sanity check
+      test -s gitversion.json && echo "gitversion.json created."
     displayName: 'Run GitVersion'
 
   - script: |
