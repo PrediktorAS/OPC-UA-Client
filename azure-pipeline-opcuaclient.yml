@@ -90,6 +90,7 @@ steps:
       done
     displayName: 'Push NuGet Package'
 
+
   - script: |
       git config --global user.email "rd_relmgr@prediktor.no"
       git config --global user.name "Build Pipeline"
