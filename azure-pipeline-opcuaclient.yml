@@ -9,7 +9,8 @@ pool:
 
 variables:
 - group: NugetPublishGroup
-  BuildConfiguration: 'Release'
+- name: BuildConfiguration
+  value: 'Release'
 
 steps:
   - checkout: self
