@@ -41,9 +41,12 @@ steps:
       export GitVersion_FullSemVer="$(GitVersion.FullSemVer)"
       export GitVersion_NuGetVersion="$(GitVersion.NuGetVersion)"
       export GitVersion_MajorMinorPatch="$(GitVersion.MajorMinorPatch)"
-      echo "GitVersion.FullSemVer: ${GitVersion_FullSemVer}"
-      echo "GitVersion.NuGetVersion: ${GitVersion_NuGetVersion}"
-      echo "GitVersion.MajorMinorPatch: ${GitVersion_MajorMinorPatch}"
+      NUGET_VERSION=$(jq -r .NuGetPackageVersion gitversion.json)
+      FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
+      MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
+      echo "GitVersion.FullSemVer: $FULL_SEMVER"
+      echo "GitVersion.NuGetVersion: $NUGET_VERSION"
+      echo "GitVersion.MajorMinorPatch: $MAJOR_MINOR_PATCH"
     displayName: 'Print GitVersion and NuGetVersion'
 
   - task: NuGetToolInstaller@1
