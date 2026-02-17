@@ -119,9 +119,11 @@ steps:
       git config --global user.email "rd_relmgr@prediktor.no"
       git config --global user.name "Build Pipeline"
       git tag $(GitVersion.MajorMinorPatch)
-      git push origin $(GitVersion.MajorMinorPatch)
+      git push https://$(GitHubPAT)@github.com/PrediktorAS/OPC-UA-Client.git $(GitVersion.MajorMinorPatch)
     displayName: 'Tag repo with latest version and push'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    env:
+      GitHubPAT: $(GitHubPAT)
 
 
 
