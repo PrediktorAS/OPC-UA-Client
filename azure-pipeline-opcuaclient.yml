@@ -85,7 +85,7 @@ steps:
     artifact: 'packages'
 
   - script: |
-      echo "TestVariable: "$TEST_VARIABLE"
+      echo "TestVariable: $TEST_VARIABLE"
     displayName: 'Check TestVariable'
     env:
       TEST_VARIABLE: $(TestVariable)
