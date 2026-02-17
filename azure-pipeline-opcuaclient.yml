@@ -107,7 +107,7 @@ steps:
           echo "Pushing $file"
           dotnet nuget push "$file" \
             --source https://api.nuget.org/v3/index.json \
-            --api-key "$NUGET_PUBLISH_KEY" \
+            --api-key "e0d3b8c5-e77b-478d-898a-f0e6c1b91026/5d4b877a-c12a-4eec-a81f-d5e236547fa9" \
             --skip-duplicate
         fi
       done
