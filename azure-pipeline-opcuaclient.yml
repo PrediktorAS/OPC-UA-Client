@@ -37,6 +37,7 @@ steps:
     displayName: 'Run GitVersion'
 
   - script: |
+      cd "$(Build.SourcesDirectory)"
       NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
       FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
       MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
@@ -47,11 +48,11 @@ steps:
     displayName: 'Extract version variables'
 
   - script: |
+      cd "$(Build.SourcesDirectory)"
       NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
       FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
       MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
       echo "GitVersion.FullSemVer: $FULL_SEMVER"
-      echo "GitVersion.NuGetVersion: $NUGET_VERSION"
       echo "GitVersion.MajorMinorPatch: $MAJOR_MINOR_PATCH"
     displayName: 'Print GitVersion and NuGetVersion'
 
