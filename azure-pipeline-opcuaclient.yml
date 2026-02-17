@@ -85,6 +85,10 @@ steps:
     artifact: 'packages'
 
   - script: |
+      echo "TestVariable: ${TestVariable}"
+    displayName: 'Check TestVariable'
+
+  - script: |
       if [ -z "${NugetPublishKey}" ]; then
         echo "NugetPublishKey is NOT set"
       else
@@ -112,6 +116,7 @@ steps:
       git push origin $(GitVersion.MajorMinorPatch)
     displayName: 'Tag repo with latest version and push'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
 
 
 
