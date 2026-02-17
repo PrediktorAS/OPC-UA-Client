@@ -1,130 +1,113 @@
-trigger:
-  branches:
-    include:
-      - main
-      - develop
+trigger:                                            # Pipeline trigger configuration
+  branches:                                         # Limit triggers to these branches
+    include:                                        # Branches that trigger the pipeline
+      - main                                        # Trigger on pushes to main
+      - develop                                     # Trigger on pushes to develop
 
-pool:
-  vmImage: 'ubuntu-latest'
+pool:                                               # Agent pool selection
+  vmImage: 'ubuntu-latest'                          # Use latest Ubuntu hosted agent
 
-variables:
-- group: NugetPublishGroup
-- name: BuildConfiguration
-  value: 'Release'
+variables:                                          # Variables used across the pipeline
+- group: NugetPublishGroup                          # Variable group (NugetPublishKey, GitHubPAT, etc.)
+- name: BuildConfiguration                          # Build configuration variable
+  value: 'Release'                                  # Set build config to Release
 
-steps:
-  - checkout: self
-    fetchDepth: 0
+steps:                                              # Steps executed by the pipeline
+  - checkout: self                                  # Checkout the repository
+    fetchDepth: 0                                   # Fetch full history (required by GitVersion)
 
-  - task: UseDotNet@2
-    displayName: 'Install .NET 10 SDK'
-    inputs:
-      packageType: sdk
-      version: 10.0.x
+  - task: UseDotNet@2                               # Install .NET SDK task
+    displayName: 'Install .NET 10 SDK'              # Friendly name of the step
+    inputs:                                         # Task inputs
+      packageType: sdk                              # Install the SDK (not just runtime)
+      version: 10.0.x                               # Use latest 10.x SDK
 
-  - script: |
-      set -euo pipefail
-      cd "$(Build.SourcesDirectory)"
+  - script: |                                       # Run GitVersion and emit ADO variables directly
+      set -euo pipefail                             # Safer bash: exit on error/undefined vars/pipeline errors
+      dotnet tool install --global GitVersion.Tool --version 6.5.1  # Install GitVersion CLI
+      export PATH="$PATH:$HOME/.dotnet/tools"       # Ensure dotnet tools path is on PATH
+      dotnet-gitversion /output buildserver -config gitversion.yml  # Emit ADO variables (no JSON parsing needed)
+    displayName: 'Run GitVersion (emit ADO variables)'  # Step name shown in UI
 
-      dotnet tool install --global GitVersion.Tool --version 6.5.1
-      export PATH="$PATH:$HOME/.dotnet/tools"
-
-      # Write JSON to both stdout (for logs) AND a file
-      dotnet-gitversion -output json -config gitversion.yml | tee gitversion.json
-
-      # Quick sanity check
-      test -s gitversion.json && echo "gitversion.json created."
-    displayName: 'Run GitVersion'
-
-  - script: |
-      cd "$(Build.SourcesDirectory)"
-      NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
-      FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
-      MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
-
-      echo "##vso[task.setvariable variable=GitVersion.NuGetVersion]$NUGET_VERSION"
-      echo "##vso[task.setvariable variable=GitVersion.FullSemVer]$FULL_SEMVER"
-      echo "##vso[task.setvariable variable=GitVersion.MajorMinorPatch]$MAJOR_MINOR_PATCH"
-    displayName: 'Extract version variables'
-
-  - script: |
-      cd "$(Build.SourcesDirectory)"
-      NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
-      FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
-      MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
-      echo "GitVersion.FullSemVer: $FULL_SEMVER"
-      echo "GitVersion.MajorMinorPatch: $MAJOR_MINOR_PATCH"
-    displayName: 'Print GitVersion and NuGetVersion'
-
-  - task: NuGetToolInstaller@1
-    displayName: 'Install NuGet tool'
-
-  - task: DotNetCoreCLI@2
-    displayName: 'Restore NuGet packages'
-    inputs:
-      command: 'restore'
-      projects: '**/*.sln'
-
-  - task: DotNetCoreCLI@2
-    displayName: 'Build solution'
-    inputs:
-      configuration: $(BuildConfiguration)
-      arguments: '--no-restore'
-
-  - task: DotNetCoreCLI@2
-    displayName: 'Run tests'
-    inputs:
-      command: 'test'
-      projects: '**/*.sln'
-      arguments: '--configuration $(BuildConfiguration) --no-build'
-
-  - task: DotNetCoreCLI@2
-    displayName: 'Pack NuGet'
-    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')
-    inputs:
-      command: 'pack'
-      configuration: $(BuildConfiguration)
-      arguments: '--no-build /p:PackageVersion=$(GitVersion.NuGetVersion)'
-      packagesToPack: 'Prediktor.UA.Client/Prediktor.UA.Client.csproj'
-      outputDir: '$(Build.ArtifactStagingDirectory)/packages/releases'
-
-  - publish: '$(Build.ArtifactStagingDirectory)/packages'
-    artifact: 'packages'
-
-  - script: |
-      if [ -z "$NUGET_PUBLISH_KEY" ]; then
-        echo "NugetPublishKey is NOT set"
-      else
-        echo "NugetPublishKey is set"
+  - script: |                                       # Resolve a NuGet package version with fallback to SemVer2
+      set -euo pipefail                             # Safe bash mode
+      RESOLVED="$(GitVersion.NuGetVersion)"         # Prefer SemVer1-compatible NuGetVersion (may be empty/null)
+      if [ -z "$RESOLVED" ] || [ "$RESOLVED" = "null" ]; then  # If missing or 'null'
+        RESOLVED="$(GitVersion.NuGetVersionV2)"     # Fall back to SemVer2-compatible NuGetVersionV2 (handles prereleases)
       fi
-    displayName: 'Check if NugetPublishKey is set'
-    env:
-      NUGET_PUBLISH_KEY: $(NugetPublishKey)
+      echo "Resolved NuGetVersion: $RESOLVED"       # Log the resolved version for visibility
+      echo "##vso[task.setvariable variable=GitVersion.NuGetVersionResolved]$RESOLVED"  # Export resolved version for later steps
+      echo "FullSemVer: $(GitVersion.FullSemVer)"   # Also log FullSemVer (e.g., 1.1.7)
+      echo "MajorMinorPatch: $(GitVersion.MajorMinorPatch)"  # Log MajorMinorPatch (e.g., 1.1.7)
+    displayName: 'Resolve package version (NuGetVersion with SemVer2 fallback)'  # Step name
 
-  - script: |
-      for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
-        if [[ "$file" != *.symbols.nupkg ]]; then
-          echo "Pushing $file"
-          dotnet nuget push "$file" \
-            --source https://api.nuget.org/v3/index.json \
-            --api-key "$NUGET_PUBLISH_KEY" \
-            --skip-duplicate
+  - task: DotNetCoreCLI@2                           # .NET restore step
+    displayName: 'Restore NuGet packages'           # Step name
+    inputs:                                         # Task inputs
+      command: 'restore'                            # Run dotnet restore
+      projects: '**/*.sln'                          # Restore all solutions
+
+  - task: DotNetCoreCLI@2                           # .NET build step
+    displayName: 'Build solution'                   # Step name
+    inputs:                                         # Task inputs
+      configuration: $(BuildConfiguration)          # Use Release configuration
+      arguments: '--no-restore'                     # Skip restore (already done)
+
+  - task: DotNetCoreCLI@2                           # .NET test step
+    displayName: 'Run tests'                        # Step name
+    inputs:                                         # Task inputs
+      command: 'test'                               # Run dotnet test
+      projects: '**/*.sln'                          # Test all solutions
+      arguments: '--configuration $(BuildConfiguration) --no-build' # Use Release; skip build (already done)
+
+  - task: DotNetCoreCLI@2                           # Pack NuGet package(s)
+    displayName: 'Pack NuGet'                       # Step name
+    condition: eq(variables['Build.SourceBranch'], 'refs/heads/main')  # Only pack on main
+    inputs:                                         # Task inputs
+      command: 'pack'                               # Run dotnet pack
+      configuration: $(BuildConfiguration)          # Use Release config
+      arguments: '--no-build /p:PackageVersion=$(GitVersion.NuGetVersionResolved) /p:ContinuousIntegrationBuild=true'  # Use resolved version
+      packagesToPack: 'Prediktor.UA.Client/Prediktor.UA.Client.csproj'      # Project to pack
+      outputDir: '$(Build.ArtifactStagingDirectory)/packages/releases'      # Output folder for .nupkg
+
+  - script: |                                       # Sanity check that the API key is available
+      if [ -z "$NUGET_PUBLISH_KEY" ]; then          # If env variable is empty
+        echo "NugetPublishKey is NOT set"           # Print warning
+      else
+        echo "NugetPublishKey is set"               # Confirm presence
+      fi
+    displayName: 'Check if NugetPublishKey is set'  # Step name
+    env:                                            # Environment variables for this step
+      NUGET_PUBLISH_KEY: $(NugetPublishKey)         # Map secret variable to env var
+
+  - script: |                                       # Push packages to NuGet.org
+      shopt -s nullglob                             # Treat unmatched globs as empty (avoid literal patterns)
+      for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do  # Iterate over built packages
+        if [[ "$file" != *.symbols.nupkg ]]; then   # Skip symbol packages
+          echo "Pushing $file"                      # Log which file is being pushed
+          dotnet nuget push "$file" \               # Push via dotnet to NuGet.org
+            --source https://api.nuget.org/v3/index.json \  # NuGet v3 feed URL
+            --api-key "$NUGET_PUBLISH_KEY" \        # Use the API key from env
+            --skip-duplicate                        # Do not fail if version already exists
         fi
       done
-    displayName: 'Push NuGet Package'
-    env:
-      NUGET_PUBLISH_KEY: $(NugetPublishKey)
+    displayName: 'Push NuGet Package'               # Step name
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))  # Only push on main if build succeeded
+    env:                                            # Environment variables for this step
+      NUGET_PUBLISH_KEY: $(NugetPublishKey)         # Provide the NuGet API key
 
-  - script: |
-      git config --global user.email "rd_relmgr@prediktor.no"
-      git config --global user.name "Build Pipeline"
-      git tag $(GitVersion.FullSemVer)
-      git push https://$(GitHubPAT)@github.com/PrediktorAS/OPC-UA-Client.git $(GitVersion.FullSemVer)
-    displayName: 'Tag repo with latest version and push'
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
-    env:
-      GitHubPAT: $(GitHubPAT)
-
-
-
-
+  - script: |                                       # Create and push a Git tag for the release
+      git config --global user.email "rd_relmgr@prediktor.no"   # Configure git user email
+      git config --global user.name "Build Pipeline"            # Configure git user name
+      git fetch --tags --prune --force              # Ensure local tag refs are up-to-date
+      TAG="$(GitVersion.FullSemVer)"                # Capture the tag value (e.g., 1.1.7)
+      if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then  # If tag already exists
+        echo "Tag $TAG already exists. Skipping creation."      # Avoid failure on reruns
+      else
+        git tag -a "$TAG" -m "Release $TAG"         # Create an annotated tag
+      fi
+      git push "https://$(GitHubPAT)@github.com/PrediktorAS/OPC-UA-Client.git" "$TAG"  # Push the tag using PAT auth
+    displayName: 'Tag repo with latest version and push'        # Step name
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))  # Only tag on main after success
+    env:                                            # Environment variables for this step
+      GitHubPAT: $(GitHubPAT)                       # GitHub Personal Access Token (secret)
