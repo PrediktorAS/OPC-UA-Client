@@ -86,21 +86,21 @@ steps:                                              # Steps executed by the pipe
     env:                                            # Environment variables for this step
       NUGET_PUBLISH_KEY: $(NugetPublishKey)         # Map secret variable to env var
 
-  - script: |                                       # Push packages to NuGet.org
-      shopt -s nullglob                             # Treat unmatched globs as empty (avoid literal patterns)
-      for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do  # Iterate over built packages
-        if [[ "$file" != *.symbols.nupkg ]]; then   # Skip symbol packages
-          echo "Pushing $file"                      # Log which file is being pushed
-          dotnet nuget push "$file" \               
-            --source https://api.nuget.org/v3/index.json \
-            --api-key "$NUGET_PUBLISH_KEY" \        
-            --skip-duplicate                        # Do not fail if version already exists
+  - script: |
+      set -euo pipefail
+      shopt -s nullglob
+
+      PKG_DIR="$(Build.ArtifactStagingDirectory)/packages/releases"
+      for file in "$PKG_DIR"/*.nupkg; do
+        if [[ "$file" != *.symbols.nupkg ]]; then
+          echo "Pushing $file"
+          dotnet nuget push "$file" --source https://api.nuget.org/v3/index.json --api-key "$NUGET_PUBLISH_KEY" --skip-duplicate
         fi
       done
-    displayName: 'Push NuGet Package'               # Step name
-    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))  # Only push on main if build succeeded
-    env:                                            # Environment variables for this step
-      NUGET_PUBLISH_KEY: $(NugetPublishKey)         # Provide the NuGet API key
+    displayName: 'Push NuGet Package'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    env:
+      NUGET_PUBLISH_KEY: $(NugetPublishKey)
 
   - script: |                                       # Create and push a Git tag for the release
       set -euo pipefail                             # Safe bash mode
