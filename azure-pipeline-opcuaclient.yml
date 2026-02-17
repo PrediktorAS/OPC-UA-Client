@@ -82,7 +82,7 @@ steps:
           echo "Pushing $file"
           dotnet nuget push "$file" \
             --source https://api.nuget.org/v3/index.json \
-            --api-key ${publish_key_3} \
+            --api-key "${publish_key_3}" \
             --skip-duplicate
         fi
       done
