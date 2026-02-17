@@ -47,9 +47,6 @@ steps:
     displayName: 'Extract version variables'
 
   - script: |
-      export GitVersion_FullSemVer="$(GitVersion.FullSemVer)"
-      export GitVersion_NuGetVersion="$(GitVersion.NuGetVersion)"
-      export GitVersion_MajorMinorPatch="$(GitVersion.MajorMinorPatch)"
       NUGET_VERSION=$(jq -r .NuGetVersion gitversion.json)
       FULL_SEMVER=$(jq -r .FullSemVer gitversion.json)
       MAJOR_MINOR_PATCH=$(jq -r .MajorMinorPatch gitversion.json)
