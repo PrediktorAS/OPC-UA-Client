@@ -91,9 +91,9 @@ steps:                                              # Steps executed by the pipe
       for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do  # Iterate over built packages
         if [[ "$file" != *.symbols.nupkg ]]; then   # Skip symbol packages
           echo "Pushing $file"                      # Log which file is being pushed
-          dotnet nuget push "$file" \               # Push via dotnet to NuGet.org
-            --source https://api.nuget.org/v3/index.json \  # NuGet v3 feed URL
-            --api-key "$NUGET_PUBLISH_KEY" \        # Use the API key from env
+          dotnet nuget push "$file" \               
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "$NUGET_PUBLISH_KEY" \        
             --skip-duplicate                        # Do not fail if version already exists
         fi
       done
