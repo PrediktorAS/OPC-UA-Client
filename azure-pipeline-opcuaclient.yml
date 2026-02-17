@@ -79,6 +79,14 @@ steps:
     artifact: 'packages'
 
   - script: |
+      if [ -z "${NugetPublishKey}" ]; then
+        echo "NugetPublishKey is NOT set"
+      else
+        echo "NugetPublishKey is set"
+      fi
+    displayName: 'Check if NugetPublishKey is set'
+
+  - script: |
       for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
         if [[ "$file" != *.symbols.nupkg ]]; then
           echo "Pushing $file"
@@ -98,5 +106,6 @@ steps:
       git push origin $(GitVersion.MajorMinorPatch)
     displayName: 'Tag repo with latest version and push'
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+
 
 
