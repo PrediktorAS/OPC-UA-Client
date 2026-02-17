@@ -8,6 +8,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
+- group: NugetPublishGroup
   BuildConfiguration: 'Release'
 
 steps:
@@ -76,13 +77,17 @@ steps:
   - publish: '$(Build.ArtifactStagingDirectory)/packages'
     artifact: 'packages'
 
-  - task: NuGetCommand@2
+  - script: |
+      for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
+        if [[ "$file" != *.symbols.nupkg ]]; then
+          echo "Pushing $file"
+          dotnet nuget push "$file" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "${NugetPublishKey}" \
+            --skip-duplicate
+        fi
+      done
     displayName: 'Push NuGet Package'
-    inputs:
-      command: 'push'
-      packagesToPush: '$(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg;!$(Build.ArtifactStagingDirectory)/packages/releases/*.symbols.nupkg'
-      nuGetFeedType: 'external'
-      publishFeedCredentials: 'Pred_nuget_03032023'
 
   - script: |
       git config --global user.email "rd_relmgr@prediktor.no"
