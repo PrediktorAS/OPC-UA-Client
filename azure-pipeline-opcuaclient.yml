@@ -29,17 +29,23 @@ steps:                                              # Steps executed by the pipe
       dotnet-gitversion /output buildserver -config gitversion.yml  # Emit ADO variables (no JSON parsing needed)
     displayName: 'Run GitVersion (emit ADO variables)'  # Step name shown in UI
 
-  - script: |                                       # Resolve a NuGet package version with fallback to SemVer2
+  - script: |                                       # Resolve a NuGet package version with SemVer2 fallback
       set -euo pipefail                             # Safe bash mode
-      RESOLVED="$(GitVersion.NuGetVersion)"         # Prefer SemVer1-compatible NuGetVersion (may be empty/null)
-      if [ -z "$RESOLVED" ] || [ "$RESOLVED" = "null" ]; then  # If missing or 'null'
-        RESOLVED="$(GitVersion.NuGetVersionV2)"     # Fall back to SemVer2-compatible NuGetVersionV2 (handles prereleases)
+      RESOLVED="${GITVERSION_NUGETVERSION}"         # Prefer SemVer1-compatible NuGetVersion
+      if [ -z "${RESOLVED}" ] || [ "${RESOLVED}" = "null" ]; then  # If missing or 'null'
+        RESOLVED="${GITVERSION_NUGETVERSIONV2}"     # Fall back to SemVer2-compatible NuGetVersionV2 (handles prereleases)
       fi
-      echo "Resolved NuGetVersion: $RESOLVED"       # Log the resolved version for visibility
-      echo "##vso[task.setvariable variable=GitVersion.NuGetVersionResolved]$RESOLVED"  # Export resolved version for later steps
-      echo "FullSemVer: $(GitVersion.FullSemVer)"   # Also log FullSemVer (e.g., 1.1.7)
-      echo "MajorMinorPatch: $(GitVersion.MajorMinorPatch)"  # Log MajorMinorPatch (e.g., 1.1.7)
+      echo "Resolved NuGetVersion: ${RESOLVED}"     # Log the resolved version for visibility
+      echo "FullSemVer: ${GITVERSION_FULLSEMVER}"   # Log FullSemVer (e.g., 1.1.7)
+      echo "MajorMinorPatch: ${GITVERSION_MAJORMINORPATCH}"  # Log MajorMinorPatch (e.g., 1.1.7)
+      echo "##vso[task.setvariable variable=GitVersion.NuGetVersionResolved]${RESOLVED}"  # Export resolved version for later steps
     displayName: 'Resolve package version (NuGetVersion with SemVer2 fallback)'  # Step name
+  # Map pipeline variables produced by GitVersion into env vars for the script above:
+    env:
+      GITVERSION_NUGETVERSION: $(GitVersion.NuGetVersion)       # SemVer1-compatible version if present
+      GITVERSION_NUGETVERSIONV2: $(GitVersion.NuGetVersionV2)   # SemVer2-compatible version (prerelease-friendly)
+      GITVERSION_FULLSEMVER: $(GitVersion.FullSemVer)           # FullSemVer for logs/tagging
+      GITVERSION_MAJORMINORPATCH: $(GitVersion.MajorMinorPatch) # Major.Minor.Patch for logs
 
   - task: DotNetCoreCLI@2                           # .NET restore step
     displayName: 'Restore NuGet packages'           # Step name
@@ -97,6 +103,7 @@ steps:                                              # Steps executed by the pipe
       NUGET_PUBLISH_KEY: $(NugetPublishKey)         # Provide the NuGet API key
 
   - script: |                                       # Create and push a Git tag for the release
+      set -euo pipefail                             # Safe bash mode
       git config --global user.email "rd_relmgr@prediktor.no"   # Configure git user email
       git config --global user.name "Build Pipeline"            # Configure git user name
       git fetch --tags --prune --force              # Ensure local tag refs are up-to-date
