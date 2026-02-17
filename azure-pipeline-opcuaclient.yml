@@ -85,11 +85,11 @@ steps:
     artifact: 'packages'
 
   - script: |
-      echo "TestVariable: ${TestVariable}"
+      echo "TestVariable: $TestVariable"
     displayName: 'Check TestVariable'
 
   - script: |
-      if [ -z "${NugetPublishKey}" ]; then
+      if [ -z "$NugetPublishKey" ]; then
         echo "NugetPublishKey is NOT set"
       else
         echo "NugetPublishKey is set"
@@ -102,7 +102,7 @@ steps:
           echo "Pushing $file"
           dotnet nuget push "$file" \
             --source https://api.nuget.org/v3/index.json \
-            --api-key "${NugetPublishKey}" \
+            --api-key "$NugetPublishKey" \
             --skip-duplicate
         fi
       done
