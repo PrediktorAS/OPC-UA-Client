@@ -85,16 +85,21 @@ steps:
     artifact: 'packages'
 
   - script: |
-      echo "TestVariable: $TestVariable"
+      echo "TestVariable: "$TEST_VARIABLE"
     displayName: 'Check TestVariable'
+    env:
+      TEST_VARIABLE: $(TestVariable)
 
   - script: |
-      if [ -z "$NugetPublishKey" ]; then
+      if [ -z "$NUGET_PUBLISH_KEY" ]; then
         echo "NugetPublishKey is NOT set"
       else
         echo "NugetPublishKey is set"
       fi
     displayName: 'Check if NugetPublishKey is set'
+    env:
+      NUGET_PUBLISH_KEY: $(NugetPublishKey)
+ 
 
   - script: |
       for file in $(Build.ArtifactStagingDirectory)/packages/releases/*.nupkg; do
