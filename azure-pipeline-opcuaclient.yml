@@ -38,6 +38,9 @@ steps:
     displayName: 'Export GitVersion variables'
 
   - script: |
+      export GitVersion_FullSemVer="$(GitVersion.FullSemVer)"
+      export GitVersion_NuGetVersion="$(GitVersion.NuGetVersion)"
+      export GitVersion_MajorMinorPatch="$(GitVersion.MajorMinorPatch)"
       echo "GitVersion.FullSemVer: ${GitVersion_FullSemVer}"
       echo "GitVersion.NuGetVersion: ${GitVersion_NuGetVersion}"
       echo "GitVersion.MajorMinorPatch: ${GitVersion_MajorMinorPatch}"
