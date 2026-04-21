@@ -6,7 +6,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.106" />
+		<PackageReference Include="OPCFoundation.NetStandard.Opc.Ua" Version="1.5.378.134" />
 		<PackageReference Include="Prediktor.Log" Version="1.0.9" />
 		<PackageReference Include="GitVersion.MsBuild" Version="6.5.1">
 			<PrivateAssets>all</PrivateAssets>
